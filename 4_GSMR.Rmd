@@ -1,0 +1,141 @@
+---
+title: "GSMR"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+# Introduction
+***
+This document reproduces the example provided in the [gsmr documentation]("http://cnsgenomics.com/software/gsmr/").  
+The library comes with a dataset which looks like this:
+```{r,  rows.print=3}
+library("gsmr")
+library(ggplot2)
+data("gsmr")
+gsmr_data
+```
+
+This dataset gives summary statistics for `r nrow(gsmr_data)` SNPs. Some SNPs have a significant effect on the risk factor and on the main trait, some don't.
+The risk factor (X) is LDL-Cholesterol. The disease (Y) is coronary artery disease. And we have a set of SNP (Z) that we use as an instrument to determine wether or not Cholesterol has an effect on CAD. Everythin is gonna be done from GWAS summary statistics.  
+I need to calculate the DL between these SNPs to be able to run GSMR.
+
+# LD correlation matrix
+***
+Save the list of interesting SNP.
+```{r}
+write.table(gsmr_data[,c(1,2)], "/Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/3_GWAS_AND_MR_ON_SCHYZO/gsmr_example_snps.allele", col.names=F, row.names=F, quote=F)
+```
+
+Extract the genotype data from a PLINK file using GCTA
+```
+/ibscratch/wrayvisscher/Yan_Holtz/1_SOFT/GCTA/gcta64 --bfile  test_data/gsmr_example   --extract gsmr_example_snps.allele --update-ref-allele gsmr_example_snps.allele --recode --out gsmr_example
+```
+Now I have a new file: gsmr_example.xmat.gz. It is a genotyping matrix that gives the allele of all individuals. Let's read it in R:  
+```{r}
+library(gsmr)
+data("gsmr")
+snp_coeff_id = scan("/Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/3_GWAS_AND_MR_ON_SCHYZO/gsmr_example.xmat.gz", what="", nlines=1)
+snp_coeff = read.table("/Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/3_GWAS_AND_MR_ON_SCHYZO/gsmr_example.xmat.gz", header=F, skip=2)
+```
+
+
+```{r}
+# Take the same SNPs with same order
+snp_id = Reduce(intersect, list(gsmr_data$SNP, snp_coeff_id))
+gsmr_data = gsmr_data[match(snp_id, gsmr_data$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate LD correlation matrix
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+a=as.data.frame( ldrho[1:5, 1:5] )
+a
+```
+
+
+# Standardization
+We need to standardize the risk factor.
+
+```{r}
+snpfreq = gsmr_data$freq             # minor allele frequencies of SNPs
+bzx = gsmr_data$bzx     # effects of instruments on risk factor
+bzx_se = gsmr_data$bzx_se       # standard errors of bzx
+bzx_n = gsmr_data$bzx_n          # sample size for GWAS of the risk factor
+std_zx = std_effect(snpfreq, bzx, bzx_se, bzx_n)    # perform standardize
+gsmr_data$std_bzx = std_zx$b    # standardized bzx
+gsmr_data$std_bzx_se = std_zx$se    # standardized bzx_se
+head(gsmr_data)
+```
+
+
+# GSMR Analysis
+***
+This is the main analysis of this R-package. It uses SNPs associated with the risk factor (e.g. at p < 5e-8) as the instruments to test for putative causal effect of the risk factor on the disease. The analysis involves a step that uses the HEIDI-outlier approach to remove SNPs that have effects on both the risk factor and the diseae because of pleiotropy.
+
+```{r}
+bzx = gsmr_data$std_bzx    # SNP effects on risk factor
+bzx_se = gsmr_data$std_bzx_se    # standard errors of bzx
+bzx_pval = gsmr_data$bzx_pval   # p-values for bzx
+bzy = gsmr_data$bzy    # SNP effects on disease
+bzy_se = gsmr_data$bzy_se    # standard errors of bzy
+bzy_pval = gsmr_data$bzy_pval    # p-values for bzy
+n_ref = 7703    # Sample size of the reference sample
+gwas_thresh = 5e-8    # GWAS threshold to select SNPs as the instruments for the GSMR analysis
+heidi_outlier_thresh = 0.01    # HEIDI-outlier threshold
+nsnps_thresh = 10   # the minimum number of instruments required for the GSMR analysis
+heidi_outlier_flag = T    # flag for HEIDI-outlier analysis
+ld_fdr_thresh = 0.05   # FDR threshold to remove the chance correlations between SNP instruments
+gsmr_results = gsmr(bzx, bzx_se, bzx_pval, bzy, bzy_se, ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh, heidi_outlier_thresh, nsnps_thresh, ld_fdr_thresh)    # GSMR analysis 
+cat("Effect of exposure on outcome: ",gsmr_results$bxy)
+```
+
+
+
+
+# HEIDI outlier detection.
+
+We do not want to take into account SNPs that have an effect on both the risk factor AND the disease (pleiotropy). We can use the HEIDI method to detect and remove them. Actually this has been done by the gsmr analysis above, but we can have a specific look to them.
+
+```{r}
+# run the heidi outlier detection:
+filtered_index = heidi_outlier(bzx, bzx_se, bzx_pval, bzy, bzy_se, ldrho, snp_coeff_id, n_ref, gwas_thresh, heidi_outlier_thresh, nsnps_thresh, ld_fdr_thresh) 
+
+# How many SNP remain? (We had 189 at the beginning)
+length(filtered_index)
+
+# Can we check which SNPs are these SNPs?
+gsmr_data$kept="no"
+gsmr_data$kept[filtered_index]="yes"
+ggplot( gsmr_data, aes(x=bzx_pval, y=bzy_pval, color=kept)) +
+  geom_point()
+```
+In summary, we had 189 SNPs at the beginning. But only 151 of them had a significant effect on the risk factor. Among this 151, 13 have been remove because they had an effect on both the risk factor and the disease.
+
+# Bi-directional GSMR analysis
+The idea is to perform the analysis in the other side to make sure that the effect happens in one side only
+```{r}
+gsmr_results = bi_gsmr(bzx, bzx_se, bzx_pval, bzy, bzy_se, bzy_pval, ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh, heidi_outlier_thresh, ld_fdr_thresh)
+cat("Effect of risk factor on disease: ",gsmr_results$forward_bxy)
+gsmr_results
+```
+
+
+
+# Visualization
+Let's visualize the relationship betwenn the SNP effects on risk factor (X axis) and SNP effects on disease (Y axis)
+```{r}
+library(ggplot2)
+ggplot(gsmr_data[filtered_index,], aes(x=std_bzx, y=bzy )) +
+  geom_point() +
+  geom_abline() +
+  coord_equal()
+```
+
+
+
+
+

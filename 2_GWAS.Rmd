@@ -1,0 +1,14 @@
+---
+title: "GWAS"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+# Introduction
+***
+This document reproduces the example provided in the [gsmr documentation]("http://cnsgenomics.com/software/gsmr/").  
+The library comes with a dataset which looks like this:
+
+
+
+

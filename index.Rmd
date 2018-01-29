@@ -1,0 +1,45 @@
+---
+title: "A Vitamin-D GWAS in the UK Biobank"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+
+This document summarizes my work concerning the Vitamin-D GWAS in the UKB. It is composed by several parts:
+
+* **Phenotype description**: explain i/ how to get the Vitamin-D phenotype ii/ clean it iii/ interaction with period. 
+* **run GWAS**: the code I used to run the GWAS with plink and description of its result.
+* **SMR**: description of the SMR pipeline to find putative genes under the discovered SNPs.
+* **GSMR**: description of the GSMR pipeline to find out if Vitamin-D has a causal effect on several mental diseases.
+
+
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+
+Some of the script described here are run on 2 different clusters:
+
+- Inode (QBI Cluster)
+```{r, eval=FALSE}
+# Access to Inode
+ssh uqyholtz@inode.qbi.uq.edu.au
+```
+
+- Delta (IMB Cluster)
+```{r, eval=FALSE}
+# Access to Inode
+ssh ...
+
+# delta repository for my work
+cd /home/y.holtz/BMI_SCHYZO
+
+# Medici on delta:
+cd /gpfs/gpfs01/polaris/Q0286/
+```

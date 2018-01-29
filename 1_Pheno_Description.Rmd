@@ -1,0 +1,50 @@
+---
+title: "Data Wrangling"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+  
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+
+This file is the first part of the UK Biobank comorbidity analysis. It does all the boring data wrangling part of the Job:  
+
+* Create a Phenotype file from the whole UKB (**server only**)
+* Take the ICD10 classification (see [here](https://holtzy.github.io/Visualizing-the-ICD10-Classification/))
+* Explain how HES data were harvested and treated  
+* Calculate the Comorbidty matrix: gives the occurence of each **disease** and each **pair of disease** for the 3 levels of classification (data available [here](https://github.com/holtzy/UKB-Comorbidity/tree/master/0_DATA))  
+* Get heritability estimates of 303 diseaes from Neale's Lab (data available [here](https://github.com/holtzy/UKB-Comorbidity/tree/master/0_DATA))
+
+
+```{r, message=FALSE, warning=FALSE}
+# We will need a few library to run this document
+library(tidyverse)
+library(rmarkdown)    # You need this library to run this template.
+library(epuRate)      # Install with devtools: install_github("holtzy/epuRate", force=TRUE)
+library(xtable)
+library(knitr)
+```
+
+
+
+
+
+
+
+
+#Harvest the UKB data
+***
+The first step takes place in the QBI cluster. I must harvest the fields I need in the whole UKB phenotype data set. To do so I read the file 9280_1250_UKBiobank.html. I select the field that interest me. Then I harvest this field using this Bash code. Note that I have to add 1 to the 'Column' column that I select.
+
+
+
+
+
+
+
+
+
+

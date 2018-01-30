@@ -13,6 +13,8 @@ navbar:
       href: 3_SMR.html
     - text: "GSMR"
       href: 4_GSMR.html
+    - text: "Xia et al"
+      href: 5_XIA_et_al.html
 
       
       

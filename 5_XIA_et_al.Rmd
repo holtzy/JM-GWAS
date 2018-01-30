@@ -1,0 +1,52 @@
+---
+title: "vitamin D GWAS sumstat from Xia et al"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+
+
+
+GWAS sumstat download by Zhihong Zhu. I get them from inode to delta:
+
+```{bash, eval=FALSE}
+# First transfert localy
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
+
+# Then from locally to delta
+cd /Users/y.holtz/Desktop
+scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT
+```
+
+
+
+
+transfert GCTA to have the last version (in dev currently, but support GSMR)
+```{bash, eval=FALSE}
+# First transfert localy
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64 .
+
+# Then from locally to delta
+cd /Users/y.holtz/Desktop
+scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin
+```
+
+
+Run GSMR through GCTA
+```{bash, eval=FALSE}
+
+# Specific repo
+cd /home/y.holtz/VITAMIND_XIA_ET_AL
+
+# Reformat summary stat file from Xia et al:
+cat ~/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT/25HydroxyVitaminD_QC.METAANALYSIS1.txt 
+
+gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_vitD
+```
+
+
+
+
+

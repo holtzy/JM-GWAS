@@ -1,5 +1,5 @@
 ---
-title: "Data Wrangling"
+title: "Phenotype description"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
@@ -10,14 +10,10 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 ```
 
 
-This file is the first part of the UK Biobank comorbidity analysis. It does all the boring data wrangling part of the Job:  
+This file is the first part of the vitamin-D GWAS analysis. What it does:
 
-* Create a Phenotype file from the whole UKB (**server only**)
-* Take the ICD10 classification (see [here](https://holtzy.github.io/Visualizing-the-ICD10-Classification/))
-* Explain how HES data were harvested and treated  
-* Calculate the Comorbidty matrix: gives the occurence of each **disease** and each **pair of disease** for the 3 levels of classification (data available [here](https://github.com/holtzy/UKB-Comorbidity/tree/master/0_DATA))  
-* Get heritability estimates of 303 diseaes from Neale's Lab (data available [here](https://github.com/holtzy/UKB-Comorbidity/tree/master/0_DATA))
-
+* Create a Phenotype file with blood pressure + other traits from the whole UKB (**server only**)
+* Describe it
 
 ```{r, message=FALSE, warning=FALSE}
 # We will need a few library to run this document
@@ -31,19 +27,68 @@ library(knitr)
 
 
 
-
-
-
-
-#Harvest the UKB data
+#- Get blood pressure data
 ***
-The first step takes place in the QBI cluster. I must harvest the fields I need in the whole UKB phenotype data set. To do so I read the file 9280_1250_UKBiobank.html. I select the field that interest me. Then I harvest this field using this Bash code. Note that I have to add 1 to the 'Column' column that I select.
+The first step is to read the UKB phenotype file and output only a few fields that will interest me. I will keep only:
+
+- individual ids (f.eid, column 1)
+- sex (f.31.0.0, column 8)
+- height (f.50.0.0, column 22)
+- bmi (f.21001.0.0, column 4069)
+- Diastolyc blood pressure (f.4079.0.0, column 706)
+
+This work is done on the **Inode server**, the file I get is transfered locally using ssh.
+```{r, eval=FALSE}
+# good repertory
+ssh uqyholtz@inode.qbi.uq.edu.au
+cd /ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS/0_DATA
+
+# Get the good column + repeat the ID + change header to respect plink format
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | awk '{print $1,$1,$8,$22,$4069,$706}' | sed '1 s/^.*$/FID IID f.31.0.0 f.50.0.0 f.21001.0.0 f.4079.0.0/' > pheno.txt
+gzip pheno.txt
+```
+
+This make me a file with about 500k lines. (~7M). I transfer it locally.
+```{r, eval=FALSE}
+# Transfert locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS/0_DATA/pheno.txt.gz .
+```
+
+From my local computer I transfert it on the delta cluster where I will run the GWAS.
+```{r, eval=FALSE}
+# Transfert on Delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA
+```
 
 
+#- Describe blood pressure  {.tabset .tabset-fade .tabset-pills}
+***
+```{r}
+#Load the file in R
+data=read.table("0_DATA/pheno.txt.gz", header=T, sep=" ")
+```
+
+##Dimension
+```{r}
+tot=nrow(data)
+blood=nrow(data[which(!is.na(data$f.4079.0.0)),])
+```
+
+I have `r tot` people in the UKB.  
+Among them `r blood` people have info concerning their blood pressure (`r blood/tot*100` %)
 
 
+##Distribution
+Distribution of the distolic blood pressure:
 
-
+```{r, warning=FALSE, fig.align="center"}
+data %>%
+  ggplot( aes(x=f.4079.0.0)) +
+    geom_density( fill="skyblue", color="skyblue") +
+    xlab("Diastolic blood pressure")
+```
 
 
 

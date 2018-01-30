@@ -26,20 +26,23 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 
 Some of the script described here are run on 2 different clusters:
 
+- Delta (IMB Cluster)
+```{r, eval=FALSE}
+# Access to delta
+ssh delta
+
+# delta repository for this work
+cd /home/y.holtz/BLOOD_GWAS
+
+# Medici on delta:
+cd /gpfs/gpfs01/polaris/Q0286/
+```
+
 - Inode (QBI Cluster)
 ```{r, eval=FALSE}
 # Access to Inode
 ssh uqyholtz@inode.qbi.uq.edu.au
-```
 
-- Delta (IMB Cluster)
-```{r, eval=FALSE}
-# Access to Inode
-ssh ...
-
-# delta repository for my work
-cd /home/y.holtz/BMI_SCHYZO
-
-# Medici on delta:
-cd /gpfs/gpfs01/polaris/Q0286/
+# Inode repo for this work
+/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS
 ```

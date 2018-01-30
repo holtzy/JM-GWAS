@@ -12,7 +12,7 @@
 <meta name="author" content="by Yan Holtz - 30 January 2018" />
 
 
-<title>Data Wrangling</title>
+<title>Phenotype description</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -226,22 +226,17 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Data Wrangling</h1>
+<h1 class="title toc-ignore">Phenotype description</h1>
 <h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 30 January 2018</em></h4>
 
 </div>
 
 
 <br><br>
-<p>This file is the first part of the UK Biobank comorbidity analysis. It does all the boring data wrangling part of the Job:</p>
+<p>This file is the first part of the vitamin-D GWAS analysis. What it does:</p>
 <ul>
-<li>Create a Phenotype file from the whole UKB (<strong>server only</strong>)</li>
-<li>Take the ICD10 classification (see <a href="https://holtzy.github.io/Visualizing-the-ICD10-Classification/">here</a>)</li>
-<li>Explain how HES data were harvested and treated<br />
-</li>
-<li>Calculate the Comorbidty matrix: gives the occurence of each <strong>disease</strong> and each <strong>pair of disease</strong> for the 3 levels of classification (data available <a href="https://github.com/holtzy/UKB-Comorbidity/tree/master/0_DATA">here</a>)<br />
-</li>
-<li>Get heritability estimates of 303 diseaes from Neale’s Lab (data available <a href="https://github.com/holtzy/UKB-Comorbidity/tree/master/0_DATA">here</a>)</li>
+<li>Create a Phenotype file with blood pressure + other traits from the whole UKB (<strong>server only</strong>)</li>
+<li>Describe it</li>
 </ul>
 <pre class="r"><code># We will need a few library to run this document
 library(tidyverse)
@@ -249,10 +244,55 @@ library(rmarkdown)    # You need this library to run this template.
 library(epuRate)      # Install with devtools: install_github(&quot;holtzy/epuRate&quot;, force=TRUE)
 library(xtable)
 library(knitr)</code></pre>
-<div id="harvest-the-ukb-data" class="section level1">
-<h1><span class="header-section-number">1</span> Harvest the UKB data</h1>
+<div id="get-blood-pressure-data" class="section level1">
+<h1><span class="header-section-number">1</span> - Get blood pressure data</h1>
 <hr />
-<p>The first step takes place in the QBI cluster. I must harvest the fields I need in the whole UKB phenotype data set. To do so I read the file 9280_1250_UKBiobank.html. I select the field that interest me. Then I harvest this field using this Bash code. Note that I have to add 1 to the ‘Column’ column that I select.</p>
+<p>The first step is to read the UKB phenotype file and output only a few fields that will interest me. I will keep only:</p>
+<ul>
+<li>individual ids (f.eid, column 1)</li>
+<li>sex (f.31.0.0, column 8)</li>
+<li>height (f.50.0.0, column 22)</li>
+<li>bmi (f.21001.0.0, column 4069)</li>
+<li>Diastolyc blood pressure (f.4079.0.0, column 706)</li>
+</ul>
+<p>This work is done on the <strong>Inode server</strong>, the file I get is transfered locally using ssh.</p>
+<pre class="r"><code># good repertory
+ssh uqyholtz@inode.qbi.uq.edu.au
+cd /ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS/0_DATA
+
+# Get the good column + repeat the ID + change header to respect plink format
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | awk &#39;{print $1,$1,$8,$22,$4069,$706}&#39; | sed &#39;1 s/^.*$/FID IID f.31.0.0 f.50.0.0 f.21001.0.0 f.4079.0.0/&#39; &gt; pheno.txt
+gzip pheno.txt</code></pre>
+<p>This make me a file with about 500k lines. (~7M). I transfer it locally.</p>
+<pre class="r"><code># Transfert locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS/0_DATA/pheno.txt.gz .</code></pre>
+<p>From my local computer I transfert it on the delta cluster where I will run the GWAS.</p>
+<pre class="r"><code># Transfert on Delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA</code></pre>
+</div>
+<div id="describe-blood-pressure" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> - Describe blood pressure</h1>
+<hr />
+<pre class="r"><code>#Load the file in R
+data=read.table(&quot;0_DATA/pheno.txt.gz&quot;, header=T, sep=&quot; &quot;)</code></pre>
+<div id="dimension" class="section level2">
+<h2><span class="header-section-number">2.1</span> Dimension</h2>
+<pre class="r"><code>tot=nrow(data)
+blood=nrow(data[which(!is.na(data$f.4079.0.0)),])</code></pre>
+<p>I have 502629 people in the UKB.<br />
+Among them 468182 people have info concerning their blood pressure (93.146635 %)</p>
+</div>
+<div id="distribution" class="section level2">
+<h2><span class="header-section-number">2.2</span> Distribution</h2>
+<p>Distribution of the distolic blood pressure:</p>
+<pre class="r"><code>data %&gt;%
+  ggplot( aes(x=f.4079.0.0)) +
+    geom_density( fill=&quot;skyblue&quot;, color=&quot;skyblue&quot;) +
+    xlab(&quot;Diastolic blood pressure&quot;)</code></pre>
+<p><img src="1_Pheno_Description_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
 </div>
 
 &nbsp;

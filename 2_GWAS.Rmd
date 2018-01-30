@@ -4,10 +4,236 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 
-# Introduction
+
+This document describe the GWAS realised on the blood pressure data of the UKB: 
+
+- Run the GWAS using plink
+- Check result
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(qqman)
+library(readr)
+library(DT)
+library(RColorBrewer)
+```
+
+
+
+
+
+
+
+
+#- Run the GWAS {.tabset .tabset-fade .tabset-pills}
 ***
-This document reproduces the example provided in the [gsmr documentation]("http://cnsgenomics.com/software/gsmr/").  
-The library comes with a dataset which looks like this:
+
+## Data used
+The GWAS is run using the following data:
+
+- Phenotype: the phenotype file created by the script in the previous page
+- Genotype: I used /afm01/Q0286/UKBiobank/v2EURu_HM3
+
+
+## Plink option used
+
+
+## GWAS
+
+Go to the appropriate folder:
+```{bash, eval=FALSE}
+cd /home/y.holtz/BLOOD_GWAS/1_GWAS
+```
+
+Make a first try on the chromosome 1:
+```{bash, eval=FALSE}
+tmp_command="plink2 \
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC\
+          --allow-no-sex \
+          --linear \
+          --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt.gz \
+          --pheno-name f.4079.0.0 \
+          --out GWAS_blood_pressure_1"
+qsubshcom "$tmp_command" 1 10G test_K1 10:00:00 ""
+```
+
+Generalize on every chromosomes using an array?
+```{bash, eval=FALSE}
+tmp_command="plink2 \
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
+          --allow-no-sex \
+          --linear \
+          --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt.gz \
+          --pheno-name f.4079.0.0 \
+          --out GWAS_blood_pressure_{TASK_ID}"
+qsubshcom "$tmp_command" 1 30G GWAS_plink 10:00:00 "-array=1-22"
+```
+
+This has been run in about 10 minutes
+
+
+
+
+
+##Clean result 
+
+I need to make 2 files at the end of this GWAS:
+
+- A first output file for clumping and general description
+```{bash, eval=FALSE}
+# Make the file
+cd /home/y.holtz/BLOOD_GWAS/1_GWAS
+head -1 GWAS_blood_pressure_1.f.4079.0.0.glm.linear  > result_GWAS_bloodpressure_plink.linear
+cat GWAS*linear | grep -v 'CHR'   >> result_GWAS_bloodpressure_plink.linear
+gzip result_GWAS_bloodpressure_plink.linear
+
+# Transfert it locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/result_GWAS_bloodpressure_plink.linear.gz  .
+```
+
+
+- A .ma file that will be used by SMR and GSMR
+```{bash, eval=FALSE}
+# first I need to compute the allele frequency of the reference allele with gcta (~30 minutes)
+cd /home/y.holtz/BLOOD_GWAS/1_GWAS
+tmp_command="gcta64 --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --freq --out all_frequency_{TASK_ID}"
+qsubshcom "$tmp_command" 1 30G allFreq_GCTA 10:00:00 "-array=1-22"
+
+# Now I can build the .ma file for GSMR
+echo "SNP A1 A2 freq b se p n" > GWAS_blood_pressure.ma
+join <(awk '{print $2, $5, $6}' /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bim | sort -k 1,1) <(awk '{print $1, $3}' all_frequency*.freq | sort) | join - <(zcat result_GWAS_bloodpressure_plink.linear.gz | awk '{if(NR>1) print $3, $9, $10, $12, $8}' | sort -k 1,1) >> more 
+```
+
+
+
+
+
+##Clumping
+Once I have the GWAS result, I have to 'clump' it: I find all the independant pics of association, find the highest LOD, the markers involved in this pic, the position of the pic... What does it take into account? It considers: 
+
+- LOD score of each SNP
+- LD between SNPs
+- Physical distance between SNPs. 
+
+Clump -p1 is the Significance threshold for index SNPs = pic of associations. p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. r2 is the LD threshold for clumping and -clump-kb is the physical distance threshold for clumping. So here I keep association with LOD score > 5 (p1: 0.00001)
+
+```{bash, eval=FALSE}
+# good folder
+cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
+
+# Prepare command
+tmp_command="plink2 \
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
+          --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure_{TASK_ID}.f.4079.0.0.glm.linear \
+          --clump-p1 0.00001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
+          --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/CLUMP_bloodpressure_{TASK_ID}.txt"
+          
+# Send qsub
+qsubshcom "$tmp_command" 1 30G clumping_plink 10:00:00 "-array=1-22"
+```
+
+
+It is more handy to have only one file with all the chromosome. Let's build it:
+```
+cd /ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/2_TEST_ON_HEIGHT/1_PLINK/HAPMAP3/CLUMPING
+
+# concatenate
+head -1 CLUMP_height_11.txt.clumped > result_GWAS_height_plink_clumped.linear
+cat CLUMP*clumped | grep -v "CHR"   >> result_GWAS_height_plink_clumped.linear
+gzip result_GWAS_height_plink_clumped.linear
+
+# Transfert locally:
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/2_TEST_ON_HEIGHT/FILES
+scp uqyholtz@cluster.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/2_TEST_ON_HEIGHT/1_PLINK/HAPMAP3/CLUMPING/result_GWAS_height_plink_clumped.linear.gz .
+```
+
+
+
+
+
+
+
+
+#- Result {.tabset .tabset-fade .tabset-pills}
+***
+
+```{r, warning=F, message=F}
+# Read result
+data=read_delim("0_DATA/result_GWAS_bloodpressure_plink.linear.gz", delim="\t", col_names=T)
+colnames(data)[1]="CHROM"
+#data=data[ sample(seq(1,nrow(data)), 10000) , ]
+
+# Read after clumping data
+#clump=read.table("~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/2_TEST_ON_HEIGHT/FILES/result_GWAS_height_plink_clumped.linear.gz", header=T)
+```
+
+##Manhattan
+Most common Manhattan plot
+```{r, fig.width=13, fig.height=6, warning=FALSE }
+manhattan(data , chr = 'CHROM', bp = 'POS', p='P', snp = 'ID', suggestiveline = 5, genomewideline = 8 , col=brewer.pal(4, "Set2") , cex=0.7)
+```
+
+##Main statistics
+```{r}
+nb_snp=nrow(data)
+signif = data %>% filter(P<0.00000001) %>% arrange(CHROM, POS)
+nb_signif=nrow(signif)
+```
+We had `r nb_snp` in our data set. We found `r nb_signif` significant association (with a 10^-8 threshold).  
+
+Here is a list of all the significant assoc:
+```{r}
+datatable(signif, rownames = FALSE, options = list(pageLength = 5) )
+```
+
+
+##Pvalue distribution
+```{r}
+data %>% ggplot(aes(x=P)) + geom_histogram(bins=200)
+```
+
+##QQplot
+```{r}
+qq(data$P)
+```
+
+
+
+##Beta distribution 
+Should be a normal distribution centered on 0? If Beta=0, the SNP has no effect. If absolute(Beta) is strong, SNP has a strong effect.
+```{r, warning=FALSE}
+data %>% ggplot(aes(x=BETA)) + geom_histogram(bins=200) +xlim(-2,2)
+```
+
+
+  
+  
+  
+##Zoom
+Is it possible to zoom on a specific part? Let's check the association located between 16 and 18 Mb
+```{r}
+data %>%
+  filter(POS>16000000 & POS<18000000 & CHROM==10) %>%
+  ggplot( aes(x=POS/1000000, y=-log10(P))) +
+    geom_point(size=1, color=alpha("skyblue", 0.6)) +
+    xlab( "position on the chromosome 1 (Mbp)") +
+    ylab( "LOD score") +
+    ggtitle( "Loci associated with height on the chromosome 1")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

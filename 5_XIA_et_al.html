@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 30 January 2018" />
+<meta name="author" content="by Yan Holtz - 01 February 2018" />
 
 
 <title>vitamin D GWAS sumstat from Xia et al</title>
@@ -230,12 +230,36 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">vitamin D GWAS sumstat from Xia et al</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 30 January 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 February 2018</em></h4>
 
 </div>
 
 
+<p>GWAS sumstat download by Zhihong Zhu. I get them from inode to delta:</p>
+<pre class="bash"><code># First transfert localy
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
 
+# Then from locally to delta
+cd /Users/y.holtz/Desktop
+scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT</code></pre>
+<p>transfert GCTA to have the last version (in dev currently, but support GSMR)</p>
+<pre class="bash"><code># First transfert localy
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64 .
+
+# Then from locally to delta
+cd /Users/y.holtz/Desktop
+scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin</code></pre>
+<p>Run GSMR through GCTA</p>
+<pre class="bash"><code>
+# Specific repo
+cd /home/y.holtz/VITAMIND_XIA_ET_AL
+
+# Reformat summary stat file from Xia et al:
+cat ~/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT/25HydroxyVitaminD_QC.METAANALYSIS1.txt 
+
+gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_vitD</code></pre>
 
 &nbsp;
 <hr />

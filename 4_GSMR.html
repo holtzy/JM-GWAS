@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 30 January 2018" />
+<meta name="author" content="by Yan Holtz - 01 February 2018" />
 
 
 <title>GSMR</title>
@@ -208,6 +208,9 @@ $(document).ready(function () {
 <li>
   <a href="4_GSMR.html">GSMR</a>
 </li>
+<li>
+  <a href="5_XIA_et_al.html">Xia et al</a>
+</li>
       </ul>
     </div><!--/.nav-collapse -->
   </div><!--/.container -->
@@ -227,7 +230,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">GSMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 30 January 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 February 2018</em></h4>
 
 </div>
 
@@ -240,9 +243,13 @@ $(document).ready(function () {
 <li>A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part</li>
 <li>GWAS summary statistics for diseases we want to explain. I’m gonna consider 23 diseases (ALLERGIC_RHINITIS ASTHMA CANCER CARD DEPRESS DERMATOPHYTOSIS DIA2 DYSLIPID HEMORRHOIDS HERNIA_ABDOMINOPELVIC HYPER INSOMNIA IRON_DEFICIENCY IRRITABLE_BOWEL MACDEGEN OSTIOA OSTIOP PEPTIC_ULCERS PSYCHIATRIC PVD STRESS SUM_DISEASES VARICOSE_VEINS). GWAS summary statistics <a href="http://cnsgenomics.com/data.html">are available</a> for the UKB data + for the GERA consortium. I’m gonna use a meta analysis of these 2 datasets. I need to transfert these data from QBI cluster to delta:</li>
 </ul>
-<pre class="bash"><code>ssh uqyholtz@inode.qbi.uq.edu.au
-cd /ibscratch/users/uqzzhu1/dataset/formatted_meta/
-scp scp combined_ukb_gera_* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT</code></pre>
+<pre class="bash"><code># First transfert localy
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera* .
+
+# Then from locally to delta
+cd /Users/y.holtz/Desktop
+scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT</code></pre>
 <p>/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64</p>
 </div>
 

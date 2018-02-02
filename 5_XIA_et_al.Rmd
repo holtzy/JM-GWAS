@@ -3,9 +3,18 @@ title: "vitamin D GWAS sumstat from Xia et al"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+> This document report the application of [GSMR]("http://cnsgenomics.com/software/gsmr/") to the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). Vitamin D is considered as the risk factor, and its potential implication with 15 diseases is studied.
 
 
+#- Data
+***
 
+##- Diseases GWAS
 
 GWAS sumstat download by Zhihong Zhu. I get them from inode to delta:
 
@@ -16,13 +25,30 @@ scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
-scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT
+scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/VITAMIND_XIA_ET_AL
+```
+
+
+##- Vitamin D GWAS
+The GWAS summary statistics for vitaminD come from the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). Downloaded from a google drive. I need to reformat it:
+```{bash, eval=FALSE}
+# good folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL
+
+# I miss the frequence of the major allele. I can use the hapmap3 frequencies previously calculated
+cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
+
+# make the file
+echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
+join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print $1, $3}' /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
 ```
 
 
 
 
-transfert GCTA to have the last version (in dev currently, but support GSMR)
+
+#- Run GSMR
+The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)
 ```{bash, eval=FALSE}
 # First transfert localy
 cd /Users/y.holtz/Desktop
@@ -33,20 +59,80 @@ cd /Users/y.holtz/Desktop
 scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin
 ```
 
-
-Run GSMR through GCTA
+Then I have to prepare a couple of files and run the analysis
 ```{bash, eval=FALSE}
-
 # Specific repo
 cd /home/y.holtz/VITAMIND_XIA_ET_AL
 
-# Reformat summary stat file from Xia et al:
-cat ~/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT/25HydroxyVitaminD_QC.METAANALYSIS1.txt 
+# Prepare a file that gives the location of every bfile (one per chromosome)
+ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
 
-gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_vitD
+# prepare a file that gives the link to the GWAS result for the risk factor
+echo "vitaminD /home/y.holtz/VITAMIND_XIA_ET_AL/GWAS_vitaminD_XiaEtAL.ma" > gsmr_exposure.txt
+
+# prepare a file that gives the link to the GWAS result for the outcomes
+for i in $(ls /shares/compbio/Group-Wray/YanHoltz/*) ; do a=$(echo $i | sed 's/.*gera_//' | sed 's/_1000g.*//') ; echo $a $i ; done > gsmr_outcome.txt
+
+# run the program
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl"
+qsubshcom "$tmp_command" 1 20G GSMRrun 10:00:00 ""
 ```
 
 
+
+#- Results
+***
+First I transfert the result locally for further analysis.
+```{bash, eval=FALSE}
+# Then from locally to delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/gsmr_result_vitaminDXiaEtAl.gsmr .
+```
+
+Read it in R and show it:
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
+gsmr %>% arrange(p)
+```
+
+A barplot of the pvalues.
+```{r, fig.align="center", message=FALSE, warning=FALSE}
+library(tidyverse)
+gsmr %>% 
+  arrange(desc(p)) %>%
+  mutate(Outcome=factor(Outcome, Outcome)) %>%
+  mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
+  ggplot( aes(x=Outcome, y=-log10(p))) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c("grey", "orange")) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab("-log10( pvalue )") +
+    xlab("")
+```
+
+Have a look to the bxy: the effect of the risk factor on the disease:
+
+```{r, fig.align="center"}
+gsmr %>% 
+  arrange(desc(p)) %>%
+  mutate(Outcome=factor(Outcome, Outcome)) %>%
+  mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
+  ggplot( aes(x=Outcome, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c("grey", "orange")) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab("-log10( pvalue )") +
+    xlab("")
+
+```
 
 
 

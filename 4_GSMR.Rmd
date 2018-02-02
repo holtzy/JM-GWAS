@@ -4,14 +4,23 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
 
-This part apply the [gsmr tool]("http://cnsgenomics.com/software/gsmr/") to our data
+>This document applies the [gsmr tool]("http://cnsgenomics.com/software/gsmr/") to our data: is blood pressure causal to one of the 15 diseases?
 
 
 #- Data
+***
 GSMR needs:
 
-- A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part
+- A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here:
+```{bash, eval=FALSE}
+ls /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma
+```
+
 - GWAS summary statistics for diseases we want to explain. I'm gonna consider 23 diseases (ALLERGIC_RHINITIS ASTHMA CANCER CARD DEPRESS DERMATOPHYTOSIS DIA2 DYSLIPID HEMORRHOIDS HERNIA_ABDOMINOPELVIC HYPER INSOMNIA IRON_DEFICIENCY IRRITABLE_BOWEL MACDEGEN OSTIOA OSTIOP PEPTIC_ULCERS PSYCHIATRIC PVD STRESS SUM_DISEASES VARICOSE_VEINS). GWAS summary statistics [are available](http://cnsgenomics.com/data.html) for the UKB data + for the GERA consortium. I'm gonna use a meta analysis of these 2 datasets. I need to transfert these data from QBI cluster to delta:
 ```{bash, eval=FALSE}
 # First transfert localy
@@ -20,9 +29,98 @@ scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_met
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
-scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT
+scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz
+```
+
+I need to reformat these files to respect the GSMR input format:
+```{bash, eval=FALSE}
+cd /shares/compbio/Group-Wray/YanHoltz
+for i in $(ls | grep -v "Hydrox") ; do
+  echo $i
+  name=$(echo $i | sed 's/.gz//')
+  zcat $i | cut -d" " -f2,4,5,7,8,9,10,11   > $name
+done
+rm *gz
 ```
 
 
-/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64
+
+
+
+#- Run GSMR
+***
+```{bash, eval=FALSE}
+# Go to the good folder
+cd /home/y.holtz/BLOOD_GWAS/3_GSMR
+
+# Prepare a file that gives the location of every bfile (one per chromosome)
+ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
+
+# prepare a file that gives the link to the GWAS result for the risk factor
+echo "blood_pressure /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma" > gsmr_exposure.txt
+
+# prepare a file that gives the link to the GWAS result for the outcomes
+for i in $(ls /shares/compbio/Group-Wray/YanHoltz/*) ; do a=$(echo $i | sed 's/.*gera_//' | sed 's/_1000g.*//') ; echo $a $i ; done > gsmr_outcome.txt
+
+# run the program
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_bloodPressure"
+qsubshcom "$tmp_command" 1 20G GSMRrun 10:00:00 ""
+
+```
+
+
+
+#- Results
+***
+First I transfert the result locally for further analysis.
+```{bash, eval=FALSE}
+# Then from locally to delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/3_GSMR/gsmr_result_bloodPressure.gsmr .
+```
+
+Read it in R and show it:
+```{r}
+gsmr=read.table("0_DATA/gsmr_result_bloodPressure.gsmr", header = T)
+gsmr
+```
+
+A barplot of the pvalues.
+```{r, fig.align="center", message=FALSE, warning=FALSE}
+library(tidyverse)
+gsmr %>% 
+  arrange(desc(p)) %>%
+  mutate(Outcome=factor(Outcome, Outcome)) %>%
+  ggplot( aes(x=Outcome, y=-log10(p))) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
+    geom_point(size=4, color="orange") +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab("-log10( pvalue )") +
+    xlab("")
+```
+
+Have a look to the bxy: the effect of the risk factor on the disease:
+
+```{r, fig.align="center"}
+gsmr %>% 
+  arrange(desc(p)) %>%
+  mutate(Outcome=factor(Outcome, Outcome)) %>%
+  mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
+  ggplot( aes(x=Outcome, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c("grey", "orange")) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab("-log10( pvalue )") +
+    xlab("")
+
+ ```
+ 
+ 
+Et yo
 

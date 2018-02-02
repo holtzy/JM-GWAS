@@ -4,6 +4,10 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
 
 This document describe the GWAS realised on the blood pressure data of the UKB: 
 
@@ -69,7 +73,7 @@ tmp_command="plink2 \
 qsubshcom "$tmp_command" 1 30G GWAS_plink 10:00:00 "-array=1-22"
 ```
 
-This has been run in about 10 minutes
+This has been run in about 10 minutes.
 
 
 
@@ -102,7 +106,7 @@ qsubshcom "$tmp_command" 1 30G allFreq_GCTA 10:00:00 "-array=1-22"
 
 # Now I can build the .ma file for GSMR
 echo "SNP A1 A2 freq b se p n" > GWAS_blood_pressure.ma
-join <(awk '{print $2, $5, $6}' /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bim | sort -k 1,1) <(awk '{print $1, $3}' all_frequency*.freq | sort) | join - <(zcat result_GWAS_bloodpressure_plink.linear.gz | awk '{if(NR>1) print $3, $9, $10, $12, $8}' | sort -k 1,1) >> more 
+join <(awk '{print $2, $5, $6}' /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bim | sort -k 1,1) <(awk '{print $1, $3}' all_frequency*.freq | sort) | join - <(zcat result_GWAS_bloodpressure_plink.linear.gz | awk '{if(NR>1) print $3, $9, $10, $12, $8}' | sort -k 1,1) >> GWAS_blood_pressure.ma
 ```
 
 
@@ -118,6 +122,19 @@ Once I have the GWAS result, I have to 'clump' it: I find all the independant pi
 
 Clump -p1 is the Significance threshold for index SNPs = pic of associations. p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. r2 is the LD threshold for clumping and -clump-kb is the physical distance threshold for clumping. So here I keep association with LOD score > 5 (p1: 0.00001)
 
+          
+          
+# Prepare command
+tmp_command="plink \
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC\
+          --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure_1.f.4079.0.0.glm.linear \
+          --clump-p1 0.00001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
+          --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/test.txt \
+          --clump-field P"
+qsubshcom "$tmp_command" 1 30G test_plink 10:00:00 ""   
+          
+          
+          
 ```{bash, eval=FALSE}
 # good folder
 cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING

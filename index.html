@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 01 February 2018" />
+<meta name="author" content="by Yan Holtz - 02 February 2018" />
 
 
 <title>A Vitamin-D GWAS in the UK Biobank</title>
@@ -169,7 +169,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeCodeFolding("hide" === "show");
+  window.initializeCodeFolding("show" === "show");
 });
 </script>
 
@@ -230,7 +230,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">A Vitamin-D GWAS in the UK Biobank</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 February 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 02 February 2018</em></h4>
 
 </div>
 
@@ -238,10 +238,11 @@ $(document).ready(function () {
 <br><br>
 <p>This document summarizes my work concerning the Vitamin-D GWAS in the UKB. It is composed by several parts:</p>
 <ul>
-<li><strong>Phenotype description</strong>: explain i/ how to get the Vitamin-D phenotype ii/ clean it iii/ interaction with period.</li>
+<li><strong>Phenotype description</strong>: explains - how to get the Vitamin-D phenotype - clean it - interaction with period.</li>
 <li><strong>run GWAS</strong>: the code I used to run the GWAS with plink and description of its result.</li>
 <li><strong>SMR</strong>: description of the SMR pipeline to find putative genes under the discovered SNPs.</li>
 <li><strong>GSMR</strong>: description of the GSMR pipeline to find out if Vitamin-D has a causal effect on several mental diseases.</li>
+<li><strong>XIa et al</strong>: GSMR run on their GWAS summary statistics.</li>
 </ul>
 <br><br>
 <p>Some of the script described here are run on 2 different clusters:</p>

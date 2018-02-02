@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 01 February 2018" />
+<meta name="author" content="by Yan Holtz - 02 February 2018" />
 
 
 <title>GSMR</title>
@@ -169,7 +169,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeCodeFolding("hide" === "show");
+  window.initializeCodeFolding("show" === "show");
 });
 </script>
 
@@ -230,17 +230,24 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">GSMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 February 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 02 February 2018</em></h4>
 
 </div>
 
 
-<p>This part apply the <a href="%22http://cnsgenomics.com/software/gsmr/%22">gsmr tool</a> to our data</p>
+<br><br>
+<blockquote>
+<p>This document applies the <a href="%22http://cnsgenomics.com/software/gsmr/%22">gsmr tool</a> to our data: is blood pressure causal to one of the 15 diseases?</p>
+</blockquote>
 <div id="data" class="section level1">
 <h1><span class="header-section-number">1</span> - Data</h1>
+<hr />
 <p>GSMR needs:</p>
 <ul>
-<li>A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part</li>
+<li>A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here:</li>
+</ul>
+<pre class="bash"><code>ls /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma</code></pre>
+<ul>
 <li>GWAS summary statistics for diseases we want to explain. I’m gonna consider 23 diseases (ALLERGIC_RHINITIS ASTHMA CANCER CARD DEPRESS DERMATOPHYTOSIS DIA2 DYSLIPID HEMORRHOIDS HERNIA_ABDOMINOPELVIC HYPER INSOMNIA IRON_DEFICIENCY IRRITABLE_BOWEL MACDEGEN OSTIOA OSTIOP PEPTIC_ULCERS PSYCHIATRIC PVD STRESS SUM_DISEASES VARICOSE_VEINS). GWAS summary statistics <a href="http://cnsgenomics.com/data.html">are available</a> for the UKB data + for the GERA consortium. I’m gonna use a meta analysis of these 2 datasets. I need to transfert these data from QBI cluster to delta:</li>
 </ul>
 <pre class="bash"><code># First transfert localy
@@ -249,8 +256,82 @@ scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_met
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
-scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT</code></pre>
-<p>/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64</p>
+scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz</code></pre>
+<p>I need to reformat these files to respect the GSMR input format:</p>
+<pre class="bash"><code>cd /shares/compbio/Group-Wray/YanHoltz
+for i in $(ls | grep -v &quot;Hydrox&quot;) ; do
+  echo $i
+  name=$(echo $i | sed &#39;s/.gz//&#39;)
+  zcat $i | cut -d&quot; &quot; -f2,4,5,7,8,9,10,11   &gt; $name
+done
+rm *gz</code></pre>
+</div>
+<div id="run-gsmr" class="section level1">
+<h1><span class="header-section-number">2</span> - Run GSMR</h1>
+<hr />
+<pre class="bash"><code># Go to the good folder
+cd /home/y.holtz/BLOOD_GWAS/3_GSMR
+
+# Prepare a file that gives the location of every bfile (one per chromosome)
+ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed &#39;s/.bed//&#39; &gt; gsmr_ref_data.txt
+
+# prepare a file that gives the link to the GWAS result for the risk factor
+echo &quot;blood_pressure /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma&quot; &gt; gsmr_exposure.txt
+
+# prepare a file that gives the link to the GWAS result for the outcomes
+for i in $(ls /shares/compbio/Group-Wray/YanHoltz/*) ; do a=$(echo $i | sed &#39;s/.*gera_//&#39; | sed &#39;s/_1000g.*//&#39;) ; echo $a $i ; done &gt; gsmr_outcome.txt
+
+# run the program
+tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_bloodPressure&quot;
+qsubshcom &quot;$tmp_command&quot; 1 20G GSMRrun 10:00:00 &quot;&quot;
+</code></pre>
+</div>
+<div id="results" class="section level1">
+<h1><span class="header-section-number">3</span> - Results</h1>
+<hr />
+<p>First I transfert the result locally for further analysis.</p>
+<pre class="bash"><code># Then from locally to delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/3_GSMR/gsmr_result_bloodPressure.gsmr .</code></pre>
+<p>Read it in R and show it:</p>
+<pre class="r"><code>gsmr=read.table(&quot;0_DATA/gsmr_result_bloodPressure.gsmr&quot;, header = T)
+gsmr</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Exposure"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["Outcome"],"name":[2],"type":["fctr"],"align":["left"]},{"label":["bxy"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["se"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["p"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["nsnp"],"name":[6],"type":["int"],"align":["right"]}],"data":[{"1":"blood_pressure","2":"ALLERGIC_RHINITIS","3":"-0.003058280","4":"0.00484326","5":"5.27746e-01","6":"172"},{"1":"blood_pressure","2":"ASTHMA","3":"0.000876266","4":"0.00444014","5":"8.43553e-01","6":"168"},{"1":"blood_pressure","2":"CANCER","3":"-0.005699730","4":"0.00431584","5":"1.86616e-01","6":"173"},{"1":"blood_pressure","2":"CARD","3":"0.031930200","4":"0.00433070","5":"1.66832e-13","6":"172"},{"1":"blood_pressure","2":"DEPRESS","3":"0.001008500","4":"0.00541236","5":"8.52184e-01","6":"172"},{"1":"blood_pressure","2":"DERMATOPHYTOSIS","3":"0.002472250","4":"0.00778041","5":"7.50672e-01","6":"172"},{"1":"blood_pressure","2":"DIA2","3":"0.014170300","4":"0.00586236","5":"1.56420e-02","6":"169"},{"1":"blood_pressure","2":"DYSLIPID","3":"0.032735200","4":"0.00396132","5":"1.41196e-16","6":"169"},{"1":"blood_pressure","2":"HEMORRHOIDS","3":"-0.000411223","4":"0.00592219","5":"9.44641e-01","6":"169"},{"1":"blood_pressure","2":"HERNIA_ABDOMINOPELVIC","3":"-0.006545980","4":"0.00576638","5":"2.56293e-01","6":"172"},{"1":"blood_pressure","2":"HYPER","3":"0.125359000","4":"0.00396717","5":"3.79126e-219","6":"157"},{"1":"blood_pressure","2":"INSOMNIA","3":"-0.003881080","4":"0.00916641","5":"6.72002e-01","6":"173"},{"1":"blood_pressure","2":"IRON_DEFICIENCY","3":"-0.006871980","4":"0.01029950","5":"5.04635e-01","6":"171"},{"1":"blood_pressure","2":"IRRITABLE_BOWEL","3":"0.000391383","4":"0.00808441","5":"9.61388e-01","6":"173"},{"1":"blood_pressure","2":"MACDEGEN","3":"0.003334760","4":"0.01063640","5":"7.53883e-01","6":"170"},{"1":"blood_pressure","2":"OSTIOA","3":"-0.002251000","4":"0.00435096","5":"6.04907e-01","6":"171"},{"1":"blood_pressure","2":"OSTIOP","3":"-0.007004720","4":"0.00795002","5":"3.78266e-01","6":"172"},{"1":"blood_pressure","2":"PEPTIC_ULCERS","3":"-0.003034260","4":"0.01117800","5":"7.86046e-01","6":"172"},{"1":"blood_pressure","2":"PSYCHIATRIC","3":"0.016241600","4":"0.00634906","5":"1.05242e-02","6":"173"},{"1":"blood_pressure","2":"PVD","3":"0.019980600","4":"0.00842606","5":"1.77264e-02","6":"172"},{"1":"blood_pressure","2":"STRESS","3":"0.006839000","4":"0.00957953","5":"4.75278e-01","6":"172"},{"1":"blood_pressure","2":"SUM_DISEASES","3":"0.034622700","4":"0.00233816","5":"1.30655e-49","6":"168"},{"1":"blood_pressure","2":"VARICOSE_VEINS","3":"0.007822180","4":"0.00890293","5":"3.79614e-01","6":"171"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>A barplot of the pvalues.</p>
+<pre class="r"><code>library(tidyverse)
+gsmr %&gt;% 
+  arrange(desc(p)) %&gt;%
+  mutate(Outcome=factor(Outcome, Outcome)) %&gt;%
+  ggplot( aes(x=Outcome, y=-log10(p))) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=-log10(p), yend=0), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(size=4, color=&quot;orange&quot;) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab(&quot;-log10( pvalue )&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<p><img src="4_GSMR_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Have a look to the bxy: the effect of the risk factor on the disease:</p>
+<pre class="r"><code>gsmr %&gt;% 
+  arrange(desc(p)) %&gt;%
+  mutate(Outcome=factor(Outcome, Outcome)) %&gt;%
+  mutate(significance=ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;)) %&gt;%
+  ggplot( aes(x=Outcome, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=bxy-se, yend=bxy+se), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;)) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab(&quot;-log10( pvalue )&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<p><img src="4_GSMR_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Et yo</p>
 </div>
 
 &nbsp;

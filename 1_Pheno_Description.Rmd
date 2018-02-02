@@ -35,7 +35,7 @@ The first step is to read the UKB phenotype file and output only a few fields th
 - sex (f.31.0.0, column 8)
 - height (f.50.0.0, column 22)
 - bmi (f.21001.0.0, column 4069)
-- Diastolyc blood pressure (f.4079.0.0, column 706)
+- Diastolic blood pressure (f.4079.0.0, column 706)
 
 This work is done on the **Inode server**, the file I get is transfered locally using ssh.
 ```{r, eval=FALSE}

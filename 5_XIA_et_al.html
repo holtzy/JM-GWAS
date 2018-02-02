@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 01 February 2018" />
+<meta name="author" content="by Yan Holtz - 02 February 2018" />
 
 
 <title>vitamin D GWAS sumstat from Xia et al</title>
@@ -169,7 +169,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeCodeFolding("hide" === "show");
+  window.initializeCodeFolding("show" === "show");
 });
 </script>
 
@@ -230,11 +230,20 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">vitamin D GWAS sumstat from Xia et al</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 February 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 02 February 2018</em></h4>
 
 </div>
 
 
+<br><br>
+<blockquote>
+<p>This document report the application of <a href="%22http://cnsgenomics.com/software/gsmr/%22">GSMR</a> to the vitamin D GWAS result of the <a href="https://www.nature.com/articles/s41467-017-02662-2">Xia et al publication</a>. Vitamin D is considered as the risk factor, and its potential implication with 15 diseases is studied.</p>
+</blockquote>
+<div id="data" class="section level1">
+<h1><span class="header-section-number">1</span> - Data</h1>
+<hr />
+<div id="diseases-gwas" class="section level2">
+<h2><span class="header-section-number">1.1</span> - Diseases GWAS</h2>
 <p>GWAS sumstat download by Zhihong Zhu. I get them from inode to delta:</p>
 <pre class="bash"><code># First transfert localy
 cd /Users/y.holtz/Desktop
@@ -242,8 +251,25 @@ scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
-scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT</code></pre>
-<p>transfert GCTA to have the last version (in dev currently, but support GSMR)</p>
+scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/VITAMIND_XIA_ET_AL</code></pre>
+</div>
+<div id="vitamin-d-gwas" class="section level2">
+<h2><span class="header-section-number">1.2</span> - Vitamin D GWAS</h2>
+<p>The GWAS summary statistics for vitaminD come from the <a href="https://www.nature.com/articles/s41467-017-02662-2">Xia et al publication</a>. Downloaded from a google drive. I need to reformat it:</p>
+<pre class="bash"><code># good folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL
+
+# I miss the frequence of the major allele. I can use the hapmap3 frequencies previously calculated
+cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
+
+# make the file
+echo &quot;SNP A1 A2 freq b se p n&quot; &gt; GWAS_vitaminD_XiaEtAL.ma
+join &lt;(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) &lt;(awk &#39;{print $1, $3}&#39; /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk &#39;{ print $1,$2,$3,$15,$4,$5,$6,$14}&#39; &gt;&gt;  GWAS_vitaminD_XiaEtAL.ma</code></pre>
+</div>
+</div>
+<div id="run-gsmr" class="section level1">
+<h1><span class="header-section-number">2</span> - Run GSMR</h1>
+<p>The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)</p>
 <pre class="bash"><code># First transfert localy
 cd /Users/y.holtz/Desktop
 scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64 .
@@ -251,15 +277,72 @@ scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/code_project/gcta/buil
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
 scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin</code></pre>
-<p>Run GSMR through GCTA</p>
-<pre class="bash"><code>
-# Specific repo
+<p>Then I have to prepare a couple of files and run the analysis</p>
+<pre class="bash"><code># Specific repo
 cd /home/y.holtz/VITAMIND_XIA_ET_AL
 
-# Reformat summary stat file from Xia et al:
-cat ~/BLOOD_GWAS/0_DATA/EXTERNAL_GWAS_SUMSTAT/25HydroxyVitaminD_QC.METAANALYSIS1.txt 
+# Prepare a file that gives the location of every bfile (one per chromosome)
+ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed &#39;s/.bed//&#39; &gt; gsmr_ref_data.txt
 
-gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_vitD</code></pre>
+# prepare a file that gives the link to the GWAS result for the risk factor
+echo &quot;vitaminD /home/y.holtz/VITAMIND_XIA_ET_AL/GWAS_vitaminD_XiaEtAL.ma&quot; &gt; gsmr_exposure.txt
+
+# prepare a file that gives the link to the GWAS result for the outcomes
+for i in $(ls /shares/compbio/Group-Wray/YanHoltz/*) ; do a=$(echo $i | sed &#39;s/.*gera_//&#39; | sed &#39;s/_1000g.*//&#39;) ; echo $a $i ; done &gt; gsmr_outcome.txt
+
+# run the program
+tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl&quot;
+qsubshcom &quot;$tmp_command&quot; 1 20G GSMRrun 10:00:00 &quot;&quot;</code></pre>
+</div>
+<div id="results" class="section level1">
+<h1><span class="header-section-number">3</span> - Results</h1>
+<hr />
+<p>First I transfert the result locally for further analysis.</p>
+<pre class="bash"><code># Then from locally to delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/gsmr_result_vitaminDXiaEtAl.gsmr .</code></pre>
+<p>Read it in R and show it:</p>
+<pre class="r"><code>library(tidyverse)
+gsmr=read.table(&quot;0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr&quot;, header = T)
+gsmr %&gt;% arrange(p)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Exposure"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["Outcome"],"name":[2],"type":["fctr"],"align":["left"]},{"label":["bxy"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["se"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["p"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["nsnp"],"name":[6],"type":["int"],"align":["right"]}],"data":[{"1":"vitaminD","2":"ALLERGIC_RHINITIS","3":"0.27300400","4":"0.1165110","5":"0.0191215","6":"17"},{"1":"vitaminD","2":"HYPER","3":"0.17454800","4":"0.0872544","5":"0.0454511","6":"16"},{"1":"vitaminD","2":"INSOMNIA","3":"-0.41088100","4":"0.2142400","5":"0.0551293","6":"17"},{"1":"vitaminD","2":"MACDEGEN","3":"0.45132500","4":"0.2557480","5":"0.0776103","6":"17"},{"1":"vitaminD","2":"OSTIOA","3":"0.15779200","4":"0.1036740","5":"0.1280080","6":"17"},{"1":"vitaminD","2":"IRON_DEFICIENCY","3":"-0.36394100","4":"0.2456070","5":"0.1383920","6":"17"},{"1":"vitaminD","2":"STRESS","3":"0.28509600","4":"0.2301190","5":"0.2153810","6":"17"},{"1":"vitaminD","2":"HERNIA_ABDOMINOPELVIC","3":"0.14608500","4":"0.1384590","5":"0.2913900","6":"17"},{"1":"vitaminD","2":"PSYCHIATRIC","3":"-0.13959800","4":"0.1429930","5":"0.3289350","6":"17"},{"1":"vitaminD","2":"DEPRESS","3":"-0.12064300","4":"0.1246030","5":"0.3329320","6":"17"},{"1":"vitaminD","2":"DERMATOPHYTOSIS","3":"0.17268400","4":"0.1858890","5":"0.3529100","6":"17"},{"1":"vitaminD","2":"HEMORRHOIDS","3":"-0.11376000","4":"0.1263990","5":"0.3681130","6":"17"},{"1":"vitaminD","2":"DYSLIPID","3":"-0.07883600","4":"0.0913678","5":"0.3882240","6":"17"},{"1":"vitaminD","2":"DIA2","3":"-0.11913200","4":"0.1411910","5":"0.3988000","6":"16"},{"1":"vitaminD","2":"PVD","3":"0.16639400","4":"0.2030820","5":"0.4125900","6":"17"},{"1":"vitaminD","2":"PEPTIC_ULCERS","3":"0.16623700","4":"0.2701750","5":"0.5383620","6":"17"},{"1":"vitaminD","2":"CARD","3":"0.05482230","4":"0.1036890","5":"0.5970010","6":"17"},{"1":"vitaminD","2":"IRRITABLE_BOWEL","3":"0.09860470","4":"0.1927390","5":"0.6089340","6":"17"},{"1":"vitaminD","2":"VARICOSE_VEINS","3":"-0.06157410","4":"0.2141240","5":"0.7736810","6":"17"},{"1":"vitaminD","2":"ASTHMA","3":"-0.02410600","4":"0.0875665","5":"0.7830950","6":"17"},{"1":"vitaminD","2":"SUM_DISEASES","3":"0.01451780","4":"0.0546114","5":"0.7903630","6":"17"},{"1":"vitaminD","2":"OSTIOP","3":"-0.01338880","4":"0.1900970","5":"0.9438500","6":"17"},{"1":"vitaminD","2":"CANCER","3":"0.00427858","4":"0.1043640","5":"0.9672980","6":"17"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>A barplot of the pvalues.</p>
+<pre class="r"><code>library(tidyverse)
+gsmr %&gt;% 
+  arrange(desc(p)) %&gt;%
+  mutate(Outcome=factor(Outcome, Outcome)) %&gt;%
+  mutate(significance=ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;)) %&gt;%
+  ggplot( aes(x=Outcome, y=-log10(p))) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=-log10(p), yend=0), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;)) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab(&quot;-log10( pvalue )&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<p><img src="5_XIA_et_al_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Have a look to the bxy: the effect of the risk factor on the disease:</p>
+<pre class="r"><code>gsmr %&gt;% 
+  arrange(desc(p)) %&gt;%
+  mutate(Outcome=factor(Outcome, Outcome)) %&gt;%
+  mutate(significance=ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;)) %&gt;%
+  ggplot( aes(x=Outcome, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=Outcome, xend=Outcome, y=bxy-se, yend=bxy+se), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;)) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab(&quot;-log10( pvalue )&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<p><img src="5_XIA_et_al_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
 
 &nbsp;
 <hr />

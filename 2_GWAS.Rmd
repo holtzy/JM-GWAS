@@ -63,11 +63,11 @@ qsubshcom "$tmp_command" 1 10G test_K1 10:00:00 ""
 
 Generalize on every chromosomes using an array?
 ```{bash, eval=FALSE}
-tmp_command="plink2 \
+tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --allow-no-sex \
           --linear \
-          --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt.gz \
+          --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt \
           --pheno-name f.4079.0.0 \
           --out GWAS_blood_pressure_{TASK_ID}"
 qsubshcom "$tmp_command" 1 30G GWAS_plink 10:00:00 "-array=1-22"
@@ -126,7 +126,7 @@ Clump -p1 is the Significance threshold for index SNPs = pic of associations. p2
           
 # Prepare command
 tmp_command="plink \
-          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC\
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC \
           --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure_1.f.4079.0.0.glm.linear \
           --clump-p1 0.00001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
           --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/test.txt \

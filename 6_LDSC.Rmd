@@ -14,5 +14,5 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 #- Data
 ***
 
-/shares/compbio/Group-Wray/YanHoltz/bin/anaconda3/bin/python /shares/compbio/Group-Wray/YanHoltz/bin/anaconda3/bin/ldsc.py -h
+`/shares/compbio/Group-Wray/YanHoltz/bin/anaconda3/bin/python /shares/compbio/Group-Wray/YanHoltz/bin/anaconda3/bin/ldsc.py -h
 

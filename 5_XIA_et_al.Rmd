@@ -44,6 +44,13 @@ cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
 # make the file with this new column, transform it in a format suitable for GSMR.
 echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
 join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print $1, $3}' /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
+
+# make a light version for github
+zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | head -1 >  25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt
+zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | awk '{if( $6 < 0.1){print $0}}' >>  25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt
+gzip 25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt.gz .
 ```
 
 
@@ -67,7 +74,7 @@ join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print 
 
 ```{r,  message=FALSE, warning=FALSE}
 # Read data
-data <- read_delim("0_DATA/25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz", col_names=T, delim=" ")
+data <- read_delim("0_DATA/25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt.gz", col_names=T, delim=" ")
 #data=data[ sample(seq(1,nrow(data)), 100000) , ]
 
 # Reformat for a more usual format

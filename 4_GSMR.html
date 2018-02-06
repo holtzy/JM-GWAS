@@ -260,14 +260,16 @@ scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_met
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
-scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz</code></pre>
+scp * y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT</code></pre>
 <p>I need to reformat these files to respect the GSMR input format:</p>
-<pre class="bash"><code>cd /shares/compbio/Group-Wray/YanHoltz
-for i in $(ls | grep -v &quot;Hydrox&quot;) ; do
+<pre class="bash"><code>cd /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT
+# Put that in a script
+for i in $(ls *gz) ; do
   echo $i
   name=$(echo $i | sed &#39;s/.gz//&#39;)
   zcat $i | cut -d&quot; &quot; -f2,4,5,7,8,9,10,11   &gt; $name
 done
+qsubshcom &quot;bash script_clean.sh&quot; 1 20G GSMRrun 10:00:00 &quot;&quot;
 rm *gz</code></pre>
 </div>
 <div id="run-gsmr" class="section level1">

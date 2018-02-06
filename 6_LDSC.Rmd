@@ -1,0 +1,18 @@
+---
+title: "LD Score Regression"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+> This document report the application of [LDSC]("https://github.com/bulik/ldsc") to the vitamin D GWAS result. It aims to determine the heritability of the trait and check the genetic correlation of vitamin D with several mental disorders.
+
+
+#- Data
+***
+
+/shares/compbio/Group-Wray/YanHoltz/bin/anaconda3/bin/python /shares/compbio/Group-Wray/YanHoltz/bin/anaconda3/bin/ldsc.py -h
+

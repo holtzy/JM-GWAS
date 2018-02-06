@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 02 February 2018" />
+<meta name="author" content="by Yan Holtz - 06 February 2018" />
 
 
 <title>GSMR</title>
@@ -169,7 +169,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeCodeFolding("show" === "show");
+  window.initializeCodeFolding("hide" === "show");
 });
 </script>
 
@@ -203,6 +203,9 @@ $(document).ready(function () {
   <a href="2_GWAS.html">GWAS</a>
 </li>
 <li>
+  <a href="6_LDSC.html">LDSC</a>
+</li>
+<li>
   <a href="3_SMR.html">SMR</a>
 </li>
 <li>
@@ -230,7 +233,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">GSMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 02 February 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 06 February 2018</em></h4>
 
 </div>
 
@@ -242,17 +245,18 @@ $(document).ready(function () {
 <div id="data" class="section level1">
 <h1><span class="header-section-number">1</span> - Data</h1>
 <hr />
-<p>GSMR needs:</p>
+<p>To run a GSMR analysis we need:</p>
 <ul>
-<li>A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here:</li>
-</ul>
-<pre class="bash"><code>ls /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma</code></pre>
+<li><p>A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here: <code>/home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma</code></p></li>
+<li><p>GWAS summary statistics for diseases we want to explain. I’m gonna consider several sources of information:</p>
 <ul>
-<li>GWAS summary statistics for diseases we want to explain. I’m gonna consider 23 diseases (ALLERGIC_RHINITIS ASTHMA CANCER CARD DEPRESS DERMATOPHYTOSIS DIA2 DYSLIPID HEMORRHOIDS HERNIA_ABDOMINOPELVIC HYPER INSOMNIA IRON_DEFICIENCY IRRITABLE_BOWEL MACDEGEN OSTIOA OSTIOP PEPTIC_ULCERS PSYCHIATRIC PVD STRESS SUM_DISEASES VARICOSE_VEINS). GWAS summary statistics <a href="http://cnsgenomics.com/data.html">are available</a> for the UKB data + for the GERA consortium. I’m gonna use a meta analysis of these 2 datasets. I need to transfert these data from QBI cluster to delta:</li>
+<li><p>23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online <a href="http://cnsgenomics.com/data.html">here</a>. Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: <code>ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*</code></p></li>
+<li><p>66 other diseases already used in the <a href="https://www.nature.com/articles/s41467-017-02317-2">GSMR paper by Zhihong et al</a>. These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: <code>ibscratch/users/uqzzhu1/dataset/formatted_meta/</code></p></li>
+</ul></li>
 </ul>
 <pre class="bash"><code># First transfert localy
 cd /Users/y.holtz/Desktop
-scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera* .
+scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_meta/* .
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
@@ -314,7 +318,7 @@ gsmr %&gt;%
     theme( panel.grid.major.y = element_blank()) +
     ylab(&quot;-log10( pvalue )&quot;) +
     xlab(&quot;&quot;)</code></pre>
-<p><img src="4_GSMR_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="4_GSMR_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>Have a look to the bxy: the effect of the risk factor on the disease:</p>
 <pre class="r"><code>gsmr %&gt;% 
   arrange(desc(p)) %&gt;%
@@ -330,7 +334,7 @@ gsmr %&gt;%
     theme( panel.grid.major.y = element_blank()) +
     ylab(&quot;-log10( pvalue )&quot;) +
     xlab(&quot;&quot;)</code></pre>
-<p><img src="4_GSMR_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="4_GSMR_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>Et yo</p>
 </div>
 

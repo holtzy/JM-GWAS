@@ -14,32 +14,38 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 
 #- Data
 ***
-GSMR needs:
+To run a GSMR analysis we need:
 
-- A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here:
-```{bash, eval=FALSE}
-ls /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma
-```
+- A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here: `/home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma`
 
-- GWAS summary statistics for diseases we want to explain. I'm gonna consider 23 diseases (ALLERGIC_RHINITIS ASTHMA CANCER CARD DEPRESS DERMATOPHYTOSIS DIA2 DYSLIPID HEMORRHOIDS HERNIA_ABDOMINOPELVIC HYPER INSOMNIA IRON_DEFICIENCY IRRITABLE_BOWEL MACDEGEN OSTIOA OSTIOP PEPTIC_ULCERS PSYCHIATRIC PVD STRESS SUM_DISEASES VARICOSE_VEINS). GWAS summary statistics [are available](http://cnsgenomics.com/data.html) for the UKB data + for the GERA consortium. I'm gonna use a meta analysis of these 2 datasets. I need to transfert these data from QBI cluster to delta:
+
+- GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information:
+
+    + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
+    
+    + 66 other diseases already used in the [GSMR paper by Zhihong et al](https://www.nature.com/articles/s41467-017-02317-2). These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
+    
+    
 ```{bash, eval=FALSE}
 # First transfert localy
 cd /Users/y.holtz/Desktop
-scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera* .
+scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_meta/* .
 
 # Then from locally to delta
 cd /Users/y.holtz/Desktop
-scp combined_ukb_gera* y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz
+scp * y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT
 ```
 
 I need to reformat these files to respect the GSMR input format:
 ```{bash, eval=FALSE}
-cd /shares/compbio/Group-Wray/YanHoltz
-for i in $(ls | grep -v "Hydrox") ; do
+cd /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT
+# Put that in a script
+for i in $(ls *gz) ; do
   echo $i
   name=$(echo $i | sed 's/.gz//')
   zcat $i | cut -d" " -f2,4,5,7,8,9,10,11   > $name
 done
+qsubshcom "bash script_clean.sh" 1 20G GSMRrun 10:00:00 ""
 rm *gz
 ```
 

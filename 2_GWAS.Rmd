@@ -6,13 +6,12 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 
 ```{r echo=FALSE}
 # Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+knitr::asis_output(htmltools::htmlPreserve("<br><br><br>"))
 ```
 
-This document describe the GWAS realised on the blood pressure data of the UKB: 
+>This document describes a GWAS realised on the [diastolic blood pressure](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=4079) data of the [UKBiobank](http://www.ukbiobank.ac.uk) dataset. It runs the GWAS using both [Plink](https://www.cog-genomics.org/plink2) and [Bolt](http://www.thetasolutionsllc.com/bolt-software.html). Summary statistics are described. They are then use as input to the [FUMA](http://fuma.ctglab.nl) and [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) website for further analysis. 
 
-- Run the GWAS using plink
-- Check result
+
 
 ```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -20,6 +19,7 @@ library(qqman)
 library(readr)
 library(DT)
 library(RColorBrewer)
+library(ggrepel)
 ```
 
 
@@ -33,36 +33,34 @@ library(RColorBrewer)
 ***
 
 ## Data used
-The GWAS is run using the following data:
+Running a GWAS requires several information:
 
-- Phenotype: the phenotype file created by the script in the previous page
-- Genotype: I used /afm01/Q0286/UKBiobank/v2EURu_HM3
+- a **phenotype file**: the phenotype file created by the script in the previous page: `/home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt.gz`. It has one line per individual. Its first column is the individual id. Other columns are traits. Traits include the Diastolic blood pressure, [field 4079](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=4079) of the UKB.
+
+- a **genotype file**: gives the alleles at each variants for each individual. Several version exist. HapMap3 has about 2M SNPs. I used the file `/afm01/Q0286/UKBiobank/v2EURu_HM3`, it keeps only unrelated European people. Note that information is stored using a compressed format and is thus split in three files: 
+      + .bed (alleles coded 0, 1, 2), 
+      + .fam (detail of each SNP like id, cM, bP, All1 and All2), 
+      + .bin (detail of each individual (id mainly).
+      
+
+- a **list of PCs**: used to correct for the population structure in plink only. Several PCs are available: computed on 1000 genomes, computed on the UKB... In my analysis I used:
 
 
-## Plink option used
 
+## run GWAS with Plink
 
-## GWAS
+I run [plink version 1.9](https://www.cog-genomics.org/plink2) for this analysis. Option used are:  
 
-Go to the appropriate folder:
+- **allow-no-sex**: explanation:
+- **linear**
+- **PCs correction**
+
+An array is used to send the calculation for each chromosome in parrallele. This is done thanks to [this script](https://github.com/zhilizheng/qsubshcom).
 ```{bash, eval=FALSE}
+# Good folder on delta
 cd /home/y.holtz/BLOOD_GWAS/1_GWAS
-```
 
-Make a first try on the chromosome 1:
-```{bash, eval=FALSE}
-tmp_command="plink2 \
-          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC\
-          --allow-no-sex \
-          --linear \
-          --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt.gz \
-          --pheno-name f.4079.0.0 \
-          --out GWAS_blood_pressure_1"
-qsubshcom "$tmp_command" 1 10G test_K1 10:00:00 ""
-```
-
-Generalize on every chromosomes using an array?
-```{bash, eval=FALSE}
+# prepare command
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --allow-no-sex \
@@ -70,24 +68,55 @@ tmp_command="plink \
           --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt \
           --pheno-name f.4079.0.0 \
           --out GWAS_blood_pressure_{TASK_ID}"
+
+# Send command in qsub
 qsubshcom "$tmp_command" 1 30G GWAS_plink 10:00:00 "-array=1-22"
 ```
 
 
 
 
+## run GWAS with bolt
+
+[Bolt](http://www.thetasolutionsllc.com/bolt-software.html) takes into account the population structure: it computes a **genomic relationship matrix** (GMR) from the genotype file and use it in the GWAS model. It thus takes way longer than plink, but gives a more precise result. It needs the whole genomic to compute the GMR, thus this analysis cannot be run on one chromosome only.  
+
+See code below to run the bolt analysis:
+```{bash, eval=FALSE}
+# Go to the appropriate folder:
+cd /home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT
+
+# Make a command that send the boltz analysis
+tmp_command="/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/bolt \
+  --bed=/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{1:22}_v2_HM3_QC.bed \
+  --bim=/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{1:22}_v2_HM3_QC.bim \
+  --fam=/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC.fam \
+  --phenoFile=/home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt \
+  --phenoCol=f.4079.0.0 \
+  --numThreads=22 \
+  --modelSnps=/gpfs/gpfs01/polaris/Q0286/UKBiobank_analysis/ukbEURu_imp_v2_HM3_QC_R2_09.snplist \
+  --LDscoresFile=/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/tables/LDSCORE.1000G_EUR.tab.gz \
+  --geneticMapFile=/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/tables/genetic_map_hg19_withX.txt.gz \
+  --lmm \
+  --statsFile output.res"
+  
+# Send command
+qsubshcom "$tmp_command" 1 100G GWAS_bolt 10:00:00 ""
+```
+
+
 
 
 ##Clean result 
 
-I need to make 2 files at the end of this GWAS:
+I need to make 3 files at the end of this GWAS:
 
-- A first output file for clumping and general description
+- A first output file for clumping and general description. It is just a concatenation of all the individual chromosome outputs.
 ```{bash, eval=FALSE}
 # Make the file
 cd /home/y.holtz/BLOOD_GWAS/1_GWAS
 head -1 GWAS_blood_pressure_1.assoc.linear  > tmp
 cat GWAS*linear | grep -v 'CHR'   >> tmp
+
 # Remove weird spaces
 cat tmp | awk '{ print $1,$2,$3,$4,$5,$6,$7,$8,$9 }' > result_GWAS_bloodpressure_plink.linear
 gzip result_GWAS_bloodpressure_plink.linear
@@ -110,6 +139,10 @@ echo "SNP A1 A2 freq b se p n" > GWAS_blood_pressure.ma
 join <(awk '{print $2, $5, $6}' /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bim | sort -k 1,1) <(awk '{print $2, $6}' all_frequency*.frq | sort) | join - <(zcat result_GWAS_bloodpressure_plink.linear.gz | awk '{if(NR>1) print $2, $7, $7/$8, $9, $6 }' | sort -k 1,1) >> GWAS_blood_pressure.ma
 ```
 
+- A 'light weight' version for sharing with others, compute a few analysis, and use online plateforms. I keep only SNPs with a pvalue < 0.05
+```{bash, eval=FALSE}
+m
+```
 
 
 
@@ -124,7 +157,12 @@ Once I have the GWAS result, I have to 'clump' it: I find all the independant pi
 - LD between SNPs
 - Physical distance between SNPs. 
 
-Clump -p1 is the Significance threshold for index SNPs = pic of associations. p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. r2 is the LD threshold for clumping and -clump-kb is the physical distance threshold for clumping. So here I keep association with LOD score > 5 (p1: 0.00001)
+Here are the clumping options I've used:  
+
+- p1 is the Significance threshold for an association
+- p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. 
+- r2 is the LD threshold for clumping and 
+- clump-kb is the physical distance threshold for clumping
 
 
 ```{bash, eval=FALSE}
@@ -164,17 +202,92 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS
 
 
 
+
+
+
+
+
+
+
 #- Result {.tabset .tabset-fade .tabset-pills}
 ***
 
 ```{r, warning=F, message=F}
 # Read result
 data=read_delim("0_DATA/result_GWAS_bloodpressure_plink.linear.gz", col_names=T, delim=" ")
-data=data[ sample(seq(1,nrow(data)), 10000) , ]
+data$CHR=as.factor(data$CHR)
+#data=data[ sample(seq(1,nrow(data)), 10000) , ]
 
 # Read after clumping data
 clump=read.table("0_DATA/result_GWAS_bloodpressure_plink_clumped", header=T)
+
+# A list of all SNPs implicated in an association? 
+Hit_SNP <- c( 
+  as.character(clump$SNP), 
+  strsplit(as.character(clump$SP2), ',', fixed=TRUE) %>% unlist() %>% gsub("\\(.\\)", "", .) 
+)
+Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
 ```
+
+
+##Manhattan
+Most common Manhattan plot
+```{r, fig.width=13, fig.height=8, warning=FALSE }
+#manhattan(data[which(data$P<0.05) , ] , chr = 'CHR', bp = 'BP', p='P', snp = 'SNP', suggestiveline = 5, genomewideline = 8   ,highlight=Hit_SNP, annotatePval=0.0000001)
+
+
+# -------- Add cumulative position + clumping information to data
+don <- data %>% 
+  
+  # Compute chromosome size and merge this info to the GWAS result
+  group_by(CHR) %>% 
+  summarise(chr_len=max(BP)) %>% 
+  mutate(tot=cumsum(chr_len)-chr_len) %>%
+  select(-chr_len) %>%
+  left_join(data, ., by=c("CHR"="CHR")) %>%
+  
+  # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
+  filter( P<0.03 | SNP %in% sample(data$SNP, 150000)) %>%
+  
+  # Add a cumulative position colummn to the data set
+  arrange(CHR, BP) %>%
+  mutate( BPcum=BP+tot) %>%
+  
+  # Add clumping information
+  mutate( is_major=ifelse(SNP %in% clump$SNP & P<0.0000000000000000000001, "yes", "no")) %>%
+  mutate( is_clump=ifelse(SNP %in% Hit_SNP, "yes", "no"))
+  
+#table(don$is_major)  
+#nrow(don)
+
+# -------- prepare X axis
+axisdf = don %>% group_by(CHR) %>% summarize(center=( max(BPcum) + min(BPcum) ) / 2 )
+  
+
+# -------- Make the plot
+ggplot(don, aes(x=BPcum, y=-log10(P))) +
+    
+    # Show all points
+    geom_point( aes(color=as.factor(CHR)), alpha=0.3, size=0.5) +
+    scale_color_manual(values = rep(c("grey", "pink"),44)) +
+    
+    # Add highlighted points for significant association:
+    geom_point(data=subset(don, is_clump=="yes"), color="orange", size=0.2) +
+    geom_point(data=subset(don, is_major=="yes"), color="red", size=4) +
+    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2) +
+      
+    # Make X axis:
+    scale_x_continuous( label = axisdf$CHR, breaks= axisdf$center ) +
+  
+    theme_bw() +
+    theme( 
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    )
+```
+
 
 ##Main statistics
 ```{r}
@@ -215,25 +328,12 @@ Detail of the clumping results:
 datatable(clump, rownames = FALSE, options = list(pageLength = 5) )
 ```
 
-List of all SNP implicated in a hit?
-```{r}
-Hit_SNP <- c( 
-  as.character(clump$SNP), 
-  strsplit(as.character(clump$SP2), ',', fixed=TRUE) %>% unlist() %>% gsub("\\(.\\)", "", .) 
-)
-Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
-```
 
 
 
 
-##Manhattan
-Most common Manhattan plot
-```{r, fig.width=13, fig.height=6, warning=FALSE }
 
-manhattan(data[which(data$P<0.05) , ] , chr = 'CHR', bp = 'BP', p='P', snp = 'SNP', suggestiveline = 5, genomewideline = 8   ,highlight=Hit_SNP, annotatePval=0.0000001)
 
-```
 
 And with the clumping loci on it
 
@@ -279,7 +379,7 @@ data %>%
 
 
 
-# 9- Genes in the region 
+#- Genes in the region 
 
 ## LocusZoom
 I can use the [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) online tool to visualise the regions of interest and see the underlying genes.
@@ -305,15 +405,20 @@ Another possiblity proposed by John would be to use the [IGV](http://software.br
 
 ## FUMA analysis
 
-Transfert the Plink results locally:
+[FUMA](http://fuma.ctglab.nl) is a platform that can be used to annotate, prioritize, visualize and interpret GWAS results. It offers 2 main functions:  
 
-```
+- The **SNP2GENE** function takes GWAS summary statistics as an input, and provides extensive functional annotation for all SNPs in genomic areas identified by lead SNPs. 
+- The **GENE2FUNC** function takes a list of geneids (as identified by SNP2GENE or as provided manually) and annotates genes in biological context 
+
+
+As input it takes a GWAS result. Transfert the Plink results locally:
+```{bash, eval=FALSE}
 cd /Users/y.holtz/Desktop
-scp uqyholtz@cluster.qbi.uq.edu.au://ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/2_TEST_ON_HEIGHT/1_PLINK/HAPMAP3/RESULT_GWAS/res*gz .
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/result_GWAS_bloodpressure_plink.linear.gz .
 ```
 
-Then connect to the [FUMA](http://fuma.ctglab.nl) website. You need an account. Load this file and send the computation. Note that your file must be <600 M.
-Lots of information available
+Then connect to the  website. My account: y.holtz@uq.edu.au. Pass: medium. Load this file and send the computation. Note that your file must be <600 M.
+Lots of information available. Available here for John.
 
 
 

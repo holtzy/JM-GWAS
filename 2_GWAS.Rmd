@@ -100,7 +100,7 @@ tmp_command="/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/bolt
   --statsFile output.res"
   
 # Send command
-qsubshcom "$tmp_command" 1 100G GWAS_bolt 10:00:00 ""
+qsubshcom "$tmp_command" 1 100G GWAS_bolt 60:00:00 ""
 ```
 
 

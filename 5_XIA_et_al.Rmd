@@ -49,23 +49,28 @@ cd /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
 # I miss the frequence of the major allele in this file. I can use the hapmap3 frequencies previously calculated
 cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
 
-# --- make the file with this new column, transform it in a format suitable for GSMR.
+# --- MA FORMAT --- make the file with this new column, transform it in a format suitable for GSMR.
 echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
 join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print $1, $3}' /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
 
-# --- make a light version for github
-zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | head -1 >  25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt
-zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | awk '{if( $6 < 0.1){print $0}}' >>  25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt
-gzip 25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/25HydroxyVitaminD_QC.METAANALYSIS1_LIGHT.txt.gz .
+# --- LINEAR FORMAT --- make a .linear format suitable for PLINK or FUMA
+echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > GWAS_vitaminD_XiaEtAL.linear
+zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $13, $1, $12, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
+R  # We need to remove the 10^5 format for 100000 format
+data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
+data$BP = round(data$BP, 0)
+options(scipen=500)
+write.table(data, file="GWAS_vitaminD_XiaEtAL.linear", quote=F, row.names=FALSE )
 
-# --- make a .linear format suitable for Plink
-echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > 25HydroxyVitaminD_QC.METAANALYSIS1.linear
-zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $13, $1, $12, $2, "ADD", $14, $4, $4*$5, $6}' >> 25HydroxyVitaminD_QC.METAANALYSIS1.linear
-R
-data=read.table("25HydroxyVitaminD_QC.METAANALYSIS1.linear", header=T)
-write.table(data, file="25HydroxyVitaminD_QC.METAANALYSIS1.linear", quote=F, row.names=FALSE )
+# --- LIGHT FORMAT --- make a light version for github
+cat GWAS_vitaminD_XiaEtAL.linear | head -1 >  GWAS_vitaminD_XiaEtAL.linear.light
+cat GWAS_vitaminD_XiaEtAL.linear | awk '{if( $9 < 0.1){print $0}}' >>  GWAS_vitaminD_XiaEtAL.linear.light
+gzip GWAS_vitaminD_XiaEtAL.linear.light
+
+# Transfer locally?
+cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.light.gz .
+
 ```
 
 
@@ -97,14 +102,14 @@ First of all I can run the plink clumping algorithm on this GWAS summary statist
 
 ```{bash, eval=FALSE}
 # good folder
-cd /home/y.holtz/VITAMIND_XIA_ET_AL
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING
 
 # Prepare command
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
-          --clump /home/y.holtz/VITAMIND_XIA_ET_AL/25HydroxyVitaminD_QC.METAANALYSIS1.linear \
+          --clump /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear \
           --clump-p1 0.00001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
-          --out /home/y.holtz/VITAMIND_XIA_ET_AL/25HydroxyVitaminD_QC.METAANALYSIS1.clump"
+          --out /home/y.holtz/VITAMIND_XIA_ET_AL/GWAS_vitaminD_XiaEtAL.clump"
           
 # Send qsub
 qsubshcom "$tmp_command" 1 30G clumping_plink 10:00:00 "-array=1-22"

@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 07 February 2018" />
+<meta name="author" content="by Yan Holtz - 09 February 2018" />
 
 
 <title>SMR</title>
@@ -233,7 +233,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">SMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 07 February 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 09 February 2018</em></h4>
 
 </div>
 
@@ -244,6 +244,20 @@ $(document).ready(function () {
 <hr />
 <p>This document reproduces the example provided in the <a href="%22http://cnsgenomics.com/software/gsmr/%22">gsmr documentation</a>.<br />
 The library comes with a dataset which looks like this:</p>
+<p>The <code>smr</code> software has been downloaded <a href="http://cnsgenomics.com/software/smr/#Download">here</a> and placed in my `bin directory.</p>
+<p>I’ve to specify several files to run SMR:</p>
+<ul>
+<li><strong>bfile</strong>: individual-level SNP genotype data. I’m gonna use the HapMap3 data set: <code>/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr</code> in delta.</li>
+<li><strong>gwas-summary</strong>: the summary statistic of the GWAS I’ve done before. Must be in the ‘ma’ format. File will be: <code>/home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma</code></li>
+<li><strong>beqtl-summary</strong>: eQTL summary data coming from <a href="https://www.ncbi.nlm.nih.gov/pubmed/24013639">Westra et al</a>. Downloaded from <a href="http://cnsgenomics.com/software/smr/#Download">here</a>. Available on delta here: /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`</li>
+<li><strong>out</strong>: the output name.</li>
+</ul>
+<pre class="bash"><code># Good directory
+cd /home/y.holtz/BLOOD_GWAS/5_SMR
+
+# Run the analysis
+tmp_command=&quot;smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr19_v2_HM3_QC --gwas-summary /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_BloodPressure --thread-num 1&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G smr_BloodPressure 10:00:00 &quot;&quot;</code></pre>
 </div>
 
 &nbsp;

@@ -3,31 +3,161 @@ title: "SMR"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 # Just to add space between the introduction of the document
 knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+
+# A few library
+library(tidyverse)
+library(DT)
 ```
 
-# Introduction
+
+>This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the diastolic blood pressure GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `smr` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download).
+
+
+
+# Data
 ***
-This document reproduces the example provided in the [gsmr documentation]("http://cnsgenomics.com/software/gsmr/").  
-The library comes with a dataset which looks like this:
-
-The `smr` software has been downloaded [here](http://cnsgenomics.com/software/smr/#Download) and placed in my `bin directory.
-
-I've to specify several files to run SMR:
+To run SMR several datasets are required:
 
 - **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
 - **gwas-summary**: the summary statistic of the GWAS I've done before. Must be in the 'ma' format. File will be: `/home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma`
 - **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
 - **out**: the output name.
 
+
+
+
+
+
+# Run general SMR
+***
+
 ```{bash, eval=FALSE}
 # Good directory
 cd /home/y.holtz/BLOOD_GWAS/5_SMR
 
 # Run the analysis
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr19_v2_HM3_QC --gwas-summary /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_BloodPressure --thread-num 1"
-qsubshcom "$tmp_command" 1 30G smr_BloodPressure 10:00:00 ""
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_BloodPressure_{TASK_ID} --thread-num 1"
+qsubshcom "$tmp_command" 1 30G smr_BloodPressure 10:00:00 "-array=1-22"
+
+# Concatenate chromosome results
+cat smr_BloodPressure_*smr | head -1 > smr_BloodPressure.smr
+cat smr_BloodPressur*smr | grep -v "^probeID" >> smr_BloodPressure.smr
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/5_SMR/smr_BloodPressure.smr  .
 ```
+
+
+
+
+
+
+# Results {.tabset .tabset-fade .tabset-pills}
+***
+```{r}
+data=read.table("0_DATA/smr_BloodPressure.smr", header=T)
+```
+The general SMR result provides `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. Here an overview of the result
+
+```{r, message=FALSE, warning=FALSE}
+datatable(data, rownames = FALSE, options = list(pageLength = 5, scrollX = "(500px") )
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+A few summary statistics on this table:  
+
+## # of Line
+Total number of line in the SMR output: `r nrow(data)`
+```{r}
+data %>%
+  group_by(ProbeChr) %>%
+  count() %>%
+  arrange(n) %>%
+  ungroup() %>%
+  mutate( ProbeChr=factor(ProbeChr, ProbeChr)) %>%
+  ggplot( aes(x=ProbeChr, y=n)) +
+    geom_segment( aes(x=ProbeChr, xend=ProbeChr, y=0, yend=n), color="grey") +
+    geom_point(size=3, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_blank())
+```
+
+## # of signif SMR
+Total number of line in the SMR output with pSMR < 0.000001: `r data %>% filter(p_SMR<0.000001) %>% nrow() `
+```{r}
+data %>%
+  filter(p_SMR<0.000001) %>%
+  group_by(ProbeChr) %>%
+  count() %>%
+  arrange(n) %>%
+  ungroup() %>%
+  mutate( ProbeChr=factor(ProbeChr, ProbeChr)) %>%
+  ggplot( aes(x=ProbeChr, y=n)) +
+    geom_segment( aes(x=ProbeChr, xend=ProbeChr, y=0, yend=n), color="grey") +
+    geom_point(size=3, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_blank())
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# Locus ILMN_1754121
+***
+Get the data for the plot
+```{bash, eval=FALSE}
+# Good folder
+cd /home/y.holtz/BLOOD_GWAS/5_SMR
+
+# Load the position of genes:
+wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
+
+# Send smr plot for this loci
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr15_v2_HM3_QC --gwas-summary /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_1754121	 --probe-wind 500 --gene-list /home/y.holtz/BLOOD_GWAS/5_SMR/glist-hg18"
+qsubshcom "$tmp_command" 1 30G smr_plot_BloodPressure_loc1 10:00:00 ""
+
+# cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/5_SMR/plot/myplot*  .
+```
+
+```{r, fig.align="center", fig.width=12, fig.height=9}
+# Make the plot
+source("SCRIPT/plot_SMR.r") 
+# Read the data file in R:
+SMRData = ReadSMRData("0_DATA/myplot.ILMN_1754121.txt")
+# Plot the SMR results in a genomic region centred around a probe:
+SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -223,7 +223,6 @@ qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-88"
 # Once it's over, concatenate the results in a unique file
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
- 
 ```
 
 

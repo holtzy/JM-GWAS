@@ -106,24 +106,20 @@ qsubshcom "$tmp_command" 1 100G GWAS_bolt 60:00:00 ""
 
 
 
-##Clean result 
+##Clean result (plink)
 
 I need to make 3 files at the end of this GWAS:
 
 - A first output file for clumping and general description. It is just a concatenation of all the individual chromosome outputs.
 ```{bash, eval=FALSE}
 # Make the file
-cd /home/y.holtz/BLOOD_GWAS/1_GWAS
+cd /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK
 head -1 GWAS_blood_pressure_1.assoc.linear  > tmp
 cat GWAS*linear | grep -v 'CHR'   >> tmp
 
 # Remove weird spaces
 cat tmp | awk '{ print $1,$2,$3,$4,$5,$6,$7,$8,$9 }' > result_GWAS_bloodpressure_plink.linear
 gzip result_GWAS_bloodpressure_plink.linear
-
-# Transfert it locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/result_GWAS_bloodpressure_plink.linear.gz  .
 ```
 
 
@@ -148,6 +144,62 @@ m
 
 
 
+##Clean result (bolt)
+
+I need to make 3 files at the end of this GWAS:
+
+- **.linear**: A first output file for clumping and general description. It will look like plink output.
+```{bash, eval=FALSE}
+# Make the file
+cd /home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT
+echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > result_GWAS_bloodpressure_bolt.linear
+cat output.res | grep -v '^SNP' | awk '{print $2, $1, $3, $5, "ADD", "300000", $9, $9/$10, $11 }'   >> result_GWAS_bloodpressure_bolt.linear
+gzip result_GWAS_bloodpressure_bolt.linear
+```
+
+
+- **.ma**: file that will be used by SMR and GSMR
+```{bash, eval=FALSE}
+# first I need to compute the allele frequency of the reference allele with gcta (~30 minutes)
+# See plink script, I will use the same output
+
+# Now I can build the .ma file for GSMR
+echo "SNP A1 A2 freq b se p n" > GWAS_blood_pressure_bolt.ma
+join <(awk '{print $2, $5, $6}' /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bim | sort -k 1,1) <(awk '{print $2, $6}' /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency*.frq | sort) | join - <(zcat result_GWAS_bloodpressure_bolt.linear.gz | awk '{if(NR>1) print $2, $7, $7/$8, $9, $6 }' | sort -k 1,1) >> GWAS_blood_pressure_bolt.ma
+```
+
+
+- **light weight** version for sharing with others, compute a few analysis, and use online plateforms. I keep only SNPs with a pvalue < 0.05
+```{bash, eval=FALSE}
+zcat result_GWAS_bloodpressure_bolt.linear.gz | head -1 > result_GWAS_bloodpressure_bolt.linear.light
+zcat result_GWAS_bloodpressure_bolt.linear.gz | awk '{ if($9<0.05){print $0 }}' >> result_GWAS_bloodpressure_bolt.linear.light
+gzip result_GWAS_bloodpressure_bolt.linear.light
+```
+
+- **Split per chromosome**: to run the clumping faster, it is more convenient to have 1 file per chromosome.
+```{bash, eval=FALSE}
+for i in $(seq 1 22); do 
+  echo $i ; 
+  zcat  result_GWAS_bloodpressure_bolt.linear.gz | head -1 > result_GWAS_bloodpressure_bolt_$i.linear
+  zcat  result_GWAS_bloodpressure_bolt.linear.gz | grep ^${i} >> result_GWAS_bloodpressure_bolt_$i.linear
+done
+```
+
+
+
+Transfer files locally:
+```{bash, eval=FALSE}
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT/result_GWAS_bloodpressure_bolt.linear.gz  .
+```
+
+
+
+
+
+
+
+
 
 
 ##Clumping
@@ -164,35 +216,54 @@ Here are the clumping options I've used:
 - r2 is the LD threshold for clumping and 
 - clump-kb is the physical distance threshold for clumping
 
-
+**Plink**
 ```{bash, eval=FALSE}
 # good folder
-cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
+cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING/PLINK
 
 # Prepare command
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure_{TASK_ID}.assoc.linear \
-          --clump-p1 0.00001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
-          --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/CLUMP_bloodpressure_{TASK_ID}.txt"
+          --clump-p1 0.00000001 --clump-r2 0.50 --clump-kb 500 \
+          --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/PLINK/CLUMP_bloodpressure_{TASK_ID}.txt"
           
 # Send qsub
 qsubshcom "$tmp_command" 1 30G clumping_plink 10:00:00 "-array=1-22"
-```
 
-
-It is more handy to have only one file with all the chromosome. Let's build it:
-```{bash, eval=FALSE}
-# good folder
-cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
-
-# concatenate
+#It is more handy to have only one file with all the chromosome. Let's build it:
 cat *clumped | grep "CHR" | head -1 > result_GWAS_bloodpressure_plink_clumped
 cat CLUMP*clumped | grep -v "CHR" |sed '/^$/d'  >> result_GWAS_bloodpressure_plink_clumped
+```
 
+
+
+**Bolt**
+```{bash, eval=FALSE}
+# good folder
+cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING/BOLT
+
+# Prepare command
+tmp_command="plink \
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
+          --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT/result_GWAS_bloodpressure_bolt_{TASK_ID}.linear\
+          --clump-p1 0.00000001 --clump-r2 0.50 --clump-kb 500 \
+          --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/BOLT/CLUMP_bloodpressure_{TASK_ID}_bolt.txt"
+          
+# Send qsub
+qsubshcom "$tmp_command" 1 30G clumping_bolt 10:00:00 "-array=1-22"
+
+#It is more handy to have only one file with all the chromosome. Let's build it:
+cat *clumped | grep "CHR" | head -1 > result_GWAS_bloodpressure_bolt_clumped
+cat CLUMP*clumped | grep -v "CHR" |sed '/^$/d'  >> result_GWAS_bloodpressure_bolt_clumped
+```
+
+
+
+```{bash, eval=FALSE}
 # Transfert it locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_plink_clumped  .
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_*_clumped  .
 ```
 
 
@@ -201,15 +272,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS
 
 
 
-
-
-
-
-
-
-
-
-#- Result {.tabset .tabset-fade .tabset-pills}
+#- Plink GWAS Result {.tabset .tabset-fade .tabset-pills}
 ***
 
 ```{r, warning=F, message=F}
@@ -303,7 +366,6 @@ datatable(signif, rownames = FALSE, options = list(pageLength = 5) )
 ```
 
 
-
 ##Clumping details
 Number of unique significant loci detected after clumping: `r nrow(clump)`
 Number of loci per chromosome:
@@ -328,6 +390,21 @@ Detail of the clumping results:
 datatable(clump, rownames = FALSE, options = list(pageLength = 5) )
 ```
 
+##Pvalue distribution
+```{r}
+data %>% ggplot(aes(x=P)) + geom_histogram(bins=200)
+```
+
+##QQplot
+```{r}
+qq(data$P)
+```
+
+##Beta distribution 
+Should be a normal distribution centered on 0? If Beta=0, the SNP has no effect. If absolute(Beta) is strong, SNP has a strong effect.
+```{r, warning=FALSE}
+data %>% ggplot(aes(x=BETA)) + geom_histogram(bins=200) +xlim(-2,2)
+```
 
 
 
@@ -335,7 +412,124 @@ datatable(clump, rownames = FALSE, options = list(pageLength = 5) )
 
 
 
-And with the clumping loci on it
+
+
+
+#- Bolt GWAS Result {.tabset .tabset-fade .tabset-pills}
+***
+
+```{r, warning=F, message=F}
+# Read result
+data=read_delim("0_DATA/result_GWAS_bloodpressure_bolt.linear.light.gz", col_names=T, delim=" ")
+data$CHR=as.factor(data$CHR)
+#data=data[ sample(seq(1,nrow(data)), 10000) , ]
+
+# Read after clumping data
+clump=read.table("0_DATA/result_GWAS_bloodpressure_bolt_clumped", header=T)
+clump <- clump %>% filter(P<10e-8)
+
+# A list of all SNPs implicated in an association? 
+Hit_SNP <- c( 
+  as.character(clump$SNP), 
+  strsplit(as.character(clump$SP2), ',', fixed=TRUE) %>% unlist() %>% gsub("\\(.\\)", "", .) 
+)
+Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
+```
+
+
+##Manhattan
+Most common Manhattan plot
+```{r, fig.width=13, fig.height=8, warning=FALSE }
+
+# -------- Add cumulative position + clumping information to data
+don <- data %>% 
+  
+  # Compute chromosome size and merge this info to the GWAS result
+  group_by(CHR) %>% 
+  summarise(chr_len=max(BP)) %>% 
+  mutate(tot=cumsum(chr_len)-chr_len) %>%
+  select(-chr_len) %>%
+  left_join(data, ., by=c("CHR"="CHR")) %>%
+  
+  # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
+  filter( P<0.03 | SNP %in% sample(data$SNP, 10000)) %>%
+  
+  # Add a cumulative position colummn to the data set
+  arrange(CHR, BP) %>%
+  mutate( BPcum=BP+tot) %>%
+  
+  # Add clumping information
+  mutate( is_major=ifelse(SNP %in% clump$SNP & P<10e-40, "yes", "no")) %>%
+  mutate( is_clump=ifelse(SNP %in% Hit_SNP, "yes", "no"))
+  
+
+# -------- prepare X axis
+axisdf = don %>% group_by(CHR) %>% summarize(center=( max(BPcum) + min(BPcum) ) / 2 )
+  
+
+# -------- Make the plot
+ggplot(don, aes(x=BPcum, y=-log10(P))) +
+    
+    # Show all points
+    geom_point( aes(color=as.factor(CHR)), alpha=0.3, size=0.5) +
+    scale_color_manual(values = rep(c("grey", "pink"),44)) +
+    
+    # Add highlighted points for significant association:
+    geom_point(data=subset(don, is_clump=="yes"), color="orange", size=0.2) +
+    geom_point(data=subset(don, is_major=="yes"), color="red", size=4) +
+    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2) +
+      
+    # Make X axis:
+    scale_x_continuous( label = axisdf$CHR, breaks= axisdf$center ) +
+  
+    theme_bw() +
+    theme( 
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    )
+```
+
+
+##Main statistics
+```{r}
+nb_snp=nrow(data)
+signif = data %>% filter(P<10e-8) %>% arrange(CHR, BP)
+nb_signif=nrow(signif)
+```
+We had `r nb_snp` in our data set. We found `r nb_signif` significant association (with a 10^-8 threshold).  
+
+Here is a list of all the significant assoc:
+```{r}
+datatable(signif, rownames = FALSE, options = list(pageLength = 5) )
+```
+
+
+##Clumping details
+Number of unique significant loci detected after clumping: `r nrow(clump)`
+Number of loci per chromosome:
+```{r, warning=F, message=F}
+clump %>% 
+  group_by(CHR) %>%
+  summarise( tot=n() ) %>%
+  arrange(tot) %>%
+  mutate(CHR=factor(CHR, CHR)) %>%
+  ggplot( aes(x=CHR, y=tot)) +
+    geom_segment(aes(x=CHR, xend=CHR, y=tot, yend=0), color="grey") +
+    geom_point(size=4, color="orange") +
+    coord_flip() +
+    ylab("Number of significant loci") +
+    xlab("Chromosome") +
+    theme_bw()
+```
+
+Detail of the clumping results:
+```{r, warning=F, message=F}
+tmp <- clump %>% arrange(CHR, BP)
+datatable(tmp, rownames = FALSE, filter="top", options = list(pageLength = 5) )
+```
+
 
 
 
@@ -350,8 +544,6 @@ data %>% ggplot(aes(x=P)) + geom_histogram(bins=200)
 qq(data$P)
 ```
 
-
-
 ##Beta distribution 
 Should be a normal distribution centered on 0? If Beta=0, the SNP has no effect. If absolute(Beta) is strong, SNP has a strong effect.
 ```{r, warning=FALSE}
@@ -359,20 +551,11 @@ data %>% ggplot(aes(x=BETA)) + geom_histogram(bins=200) +xlim(-2,2)
 ```
 
 
-  
-  
-  
-##Zoom
-Is it possible to zoom on a specific part? Let's check the association located between 16 and 18 Mb
-```{r}
-data %>%
-  filter(BP>16000000 & BP<18000000 & CHR==10) %>%
-  ggplot( aes(x=BP/1000000, y=-log10(P))) +
-    geom_point(size=1, color=alpha("skyblue", 0.6)) +
-    xlab( "position on the chromosome 1 (Mbp)") +
-    ylab( "LOD score") +
-    ggtitle( "Loci associated with height on the chromosome 1")
-```
+
+
+
+
+
 
 
 
@@ -417,7 +600,7 @@ cd /Users/y.holtz/Desktop
 scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/result_GWAS_bloodpressure_plink.linear.gz .
 ```
 
-Then connect to the  website. My account: y.holtz@uq.edu.au. Pass: medium. Load this file and send the computation. Note that your file must be <600 M.
+Then connect to the  website. My account: y.holtz@uq.edu.au. Pass: fumayanholtz . Load this file and send the computation. Note that your file must be <600 M.
 Lots of information available. Available here for John.
 
 

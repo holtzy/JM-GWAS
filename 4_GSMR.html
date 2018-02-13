@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 09 February 2018" />
+<meta name="author" content="by Yan Holtz - 13 February 2018" />
 
 
 <title>GSMR</title>
@@ -233,7 +233,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">GSMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 09 February 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 13 February 2018</em></h4>
 
 </div>
 
@@ -282,15 +282,23 @@ cd /home/y.holtz/BLOOD_GWAS/3_GSMR
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed &#39;s/.bed//&#39; &gt; gsmr_ref_data.txt
 
 # prepare a file that gives the link to the GWAS result for the risk factor
-echo &quot;blood_pressure /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma&quot; &gt; gsmr_exposure.txt
+echo &quot;diastolicBloodPressure /home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT/GWAS_blood_pressure_bolt.ma&quot; &gt; gsmr_exposure.txt
 
-# prepare a file that gives the link to the GWAS result for the outcomes
-for i in $(ls /shares/compbio/Group-Wray/YanHoltz/*) ; do a=$(echo $i | sed &#39;s/.*gera_//&#39; | sed &#39;s/_1000g.*//&#39;) ; echo $a $i ; done &gt; gsmr_outcome.txt
+# prepare ONE file that list all the outcomes:
+for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/combined*) ; do a=$(echo $i | sed &#39;s/.*gera_//&#39; | sed &#39;s/_1000g.*//&#39;) ; echo $a $i ; done &gt; gsmr_outcome.txt
+for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/*txt | grep -v &quot;combined&quot;) ; do a=$(echo $i | sed &#39;s/.*SUMSTAT\///&#39; | sed &#39;s/.txt//&#39; ) ; echo $a $i ; done  &gt;&gt; gsmr_outcome.txt
 
-# run the program
-tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt gsmr_outcome.txt --gsmr-alg 0 --out gsmr_result_bloodPressure&quot;
-qsubshcom &quot;$tmp_command&quot; 1 20G GSMRrun 10:00:00 &quot;&quot;
-</code></pre>
+# Split this file: one file per outcome:
+split -l 1 --numeric-suffixes gsmr_outcome.txt 
+for i in x* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
+
+# send an array of GSMR
+tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_diastolicBloodPressure_{TASK_ID}&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G GSMR_array 10:00:00 &quot;-array=1-89&quot;
+
+# Once it&#39;s over, concatenate the results in a unique file
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 &gt; gsmr_result_vitaminDXiaEtAl.gsmr
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_result_vitaminDXiaEtAl.gsmr</code></pre>
 </div>
 <div id="results" class="section level1">
 <h1><span class="header-section-number">3</span> - Results</h1>

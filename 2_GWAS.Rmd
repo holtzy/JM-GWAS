@@ -224,7 +224,7 @@ cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING/PLINK
 # Prepare command
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
-          --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure_{TASK_ID}.assoc.linear \
+          --clump /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure_{TASK_ID}.assoc.linear \
           --clump-p1 0.00000001 --clump-r2 0.50 --clump-kb 500 \
           --out /home/y.holtz/BLOOD_GWAS/2_CLUMPING/PLINK/CLUMP_bloodpressure_{TASK_ID}.txt"
           
@@ -255,15 +255,14 @@ qsubshcom "$tmp_command" 1 30G clumping_bolt 10:00:00 "-array=1-22"
 
 #It is more handy to have only one file with all the chromosome. Let's build it:
 cat *clumped | grep "CHR" | head -1 > result_GWAS_bloodpressure_bolt_clumped
-cat CLUMP*clumped | grep -v "CHR" |sed '/^$/d'  >> result_GWAS_bloodpressure_bolt_clumped
+cat CLUMP*clumped | grep -v "CHR" | grep -v "NA" | sed '/^$/d'  >> result_GWAS_bloodpressure_bolt_clumped
 ```
-
 
 
 ```{bash, eval=FALSE}
 # Transfert it locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_*_clumped  .
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/BOLT/result_GWAS_bloodpressure_*_clumped  .
 ```
 
 
@@ -420,7 +419,7 @@ data %>% ggplot(aes(x=BETA)) + geom_histogram(bins=200) +xlim(-2,2)
 
 ```{r, warning=F, message=F}
 # Read result
-data=read_delim("0_DATA/result_GWAS_bloodpressure_bolt.linear.light.gz", col_names=T, delim=" ")
+data=read_delim("0_DATA/result_GWAS_bloodpressure_bolt.linear.gz", col_names=T, delim=" ")
 data$CHR=as.factor(data$CHR)
 #data=data[ sample(seq(1,nrow(data)), 10000) , ]
 
@@ -452,14 +451,14 @@ don <- data %>%
   left_join(data, ., by=c("CHR"="CHR")) %>%
   
   # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
-  filter( P<0.03 | SNP %in% sample(data$SNP, 10000)) %>%
+  filter( P<0.03 | SNP %in% sample(data$SNP, 70000)) %>%
   
   # Add a cumulative position colummn to the data set
   arrange(CHR, BP) %>%
   mutate( BPcum=BP+tot) %>%
   
   # Add clumping information
-  mutate( is_major=ifelse(SNP %in% clump$SNP & P<10e-40, "yes", "no")) %>%
+  mutate( is_major=ifelse(SNP %in% clump$SNP & P<10e-15, "yes", "no")) %>%
   mutate( is_clump=ifelse(SNP %in% Hit_SNP, "yes", "no"))
   
 
@@ -481,6 +480,7 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
       
     # Make X axis:
     scale_x_continuous( label = axisdf$CHR, breaks= axisdf$center ) +
+    scale_y_continuous( expand = c(0, 0) ) +
   
     theme_bw() +
     theme( 
@@ -491,6 +491,76 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
     )
 ```
 
+
+There is something weird on chromosome 6, with 70+ unique loci associated if we believe the clumping results. Let's have a look to it:
+```{r, fig.width=13, fig.height=8, warning=FALSE }
+don <- data %>% 
+  
+  filter(CHR==6) %>%
+
+  # Add clumping information
+  mutate( is_major=ifelse(SNP %in% clump$SNP & P<10e-8, "yes", "no")) %>%
+  mutate( is_clump=ifelse(SNP %in% Hit_SNP, "yes", "no"))
+
+ggplot(don, aes(x=BP/1000000, y=-log10(P))) +
+    
+    # Show all points
+    geom_point( aes(color=as.factor(CHR)), alpha=0.3, size=0.5, color="grey") +
+
+    # Add highlighted points for significant association:
+    geom_point(data=subset(don, is_clump=="yes"), color="orange", size=0.2) +
+    geom_point(data=subset(don, is_major=="yes"), color="red", size=4) +
+    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2) +
+      
+    # theme
+    theme_bw() +
+    theme( 
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    ) +
+    scale_y_continuous( expand = c(0, 0) ) +
+    scale_x_continuous( breaks=seq(0,200,10) ) +
+    xlab("Position on chromosome 6 (Mb)")
+``` 
+    
+Same thing zooming around 30 Mb. Knowing that I've clumped using 500kb slices! It means I should not have more than 2 distincts association in each 500kb slices. Let's watch between 25Mb and 35Mb. This is an area of 10Mb, which is 10,000 k, which is 20 times 500kb. And I've way more than 20 associations here.. So what's wrong..
+```{r, fig.width=13, fig.height=8, warning=FALSE }
+don <- data %>% 
+  
+  filter(CHR==6, BP>25000000, BP<33000000) %>%
+
+  # Add clumping information
+  mutate( is_major=ifelse(SNP %in% clump$SNP & P<10e-8, "yes", "no")) %>%
+  mutate( is_clump=ifelse(SNP %in% Hit_SNP, "yes", "no"))
+
+ggplot(don, aes(x=BP/1000000, y=-log10(P))) +
+    
+    # Show all points
+    geom_point( aes(color=as.factor(CHR)), alpha=0.3, size=0.5, color="grey") +
+
+    # Add highlighted points for significant association:
+    geom_point(data=subset(don, is_clump=="yes"), color="orange", size=0.2) +
+    geom_point(data=subset(don, is_major=="yes"), color="red", size=4) +
+    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2) +
+      
+    # theme
+    theme_bw() +
+    theme( 
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    ) +
+    scale_y_continuous( expand = c(0, 0) ) +
+    scale_x_continuous( breaks=seq(20,40,2) ) +
+    xlab("Position on chromosome 6 (Mb)") +
+  
+    #Add a segment of 500kb
+    geom_segment(y=2.5, yend=2.5, x=26, xend=26.5, color="black", size=2) +
+    geom_text( x=26, y=2.9, label="500kb segment", hjust=0)
+``` 
 
 ##Main statistics
 ```{r}
@@ -562,14 +632,17 @@ data %>% ggplot(aes(x=BETA)) + geom_histogram(bins=200) +xlim(-2,2)
 
 
 
-#- Genes in the region 
+#- Genes in the region {.tabset .tabset-fade .tabset-pills}
+***
+
+A few tool allow to go further in the analysis. The goal is notably to understand what genes are located in the regions where significant associations are detected.
 
 ## LocusZoom
 I can use the [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) online tool to visualise the regions of interest and see the underlying genes.
 Just put the .linear result of PLINK on it, and specify the SNP of interest.
 It gives me this result:
  
-![snp](/Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/2_TEST_ON_HEIGHT/FILES/res_rs143384.png)
+![snp](IMG/rs12785878_BloodPressure_LocusZoom.png)
 
 
 
@@ -577,7 +650,7 @@ It gives me this result:
 
 
 ## Genes in the region (IGV)
-Another possiblity proposed by John would be to use the [IGV](http://software.broadinstitute.org/software/igv/) software.
+Another possiblity proposed by John would be to use the [IGV](http://software.broadinstitute.org/software/igv/) software. Download is possible [here](http://software.broadinstitute.org/software/igv/download). It looks like this tool is more adapted for people working at the molecular level? Like using NGS and reads?
 
 
 

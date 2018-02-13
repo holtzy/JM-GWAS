@@ -8,7 +8,7 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 ```
 
-> This document report the application of [GSMR]("http://cnsgenomics.com/software/gsmr/") to the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). Vitamin D is considered as the risk factor, and its potential implication with 15 diseases is studied.
+> This document report the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). Vitamin D is considered as the risk factor, and its potential implication with ~80 diseases is studied.
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -93,46 +93,6 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vit
 ***
 
 
-##Clumping
-First of all I can run the plink clumping algorithm on this GWAS summary statistics to hae an insight of the unique association loci. Here are the clumping options I've used:  
-
-- p1 is the Significance threshold for an association
-- p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. 
-- r2 is the LD threshold for clumping and 
-- clump-kb is the physical distance threshold for clumping
-
-
-```{bash, eval=FALSE}
-# good folder
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING
-
-# Prepare command
-tmp_command="plink \
-          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impHRC/ukbEURu_imp_chr{TASK_ID}_v2_imp_QC_HRC\
-          --clump /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz \
-          --clump-p1 0.00001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
-          --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL.clump"
-          
-# Send qsub
-qsubshcom "$tmp_command" 1 80G clumping_plink 30:00:00 "-array=1-22"
-```
-
-
-It is more handy to have only one file with all the chromosome. Let's build it:
-```{bash, eval=FALSE}
-# good folder
-cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
-
-# concatenate
-cat *clumped | grep "CHR" | head -1 > result_GWAS_bloodpressure_plink_clumped
-cat CLUMP*clumped | grep -v "CHR" |sed '/^$/d'  >> result_GWAS_bloodpressure_plink_clumped
-
-# Transfert it locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_plink_clumped  .
-```
-
-
 
 ##Manhattan
 ```{r,  message=FALSE, warning=FALSE}
@@ -156,6 +116,46 @@ manhattan(data[which(data$P<0.05) , ], chr = 'CHR', bp = 'BP', p='P', snp = 'SNP
 Here is a list of all the significant assoc:
 ```{r}
 datatable(signif, rownames = FALSE, options = list(pageLength = 5) )
+```
+
+
+##Clumping
+First of all I can run the plink clumping algorithm on this GWAS summary statistics to hae an insight of the unique association loci. Here are the clumping options I've used:  
+
+- p1 is the Significance threshold for an association
+- p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. 
+- r2 is the LD threshold for clumping and 
+- clump-kb is the physical distance threshold for clumping
+
+
+```{bash, eval=FALSE}
+# good folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING
+
+# Prepare command
+tmp_command="plink \
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impHRC/ukbEURu_imp_chr{TASK_ID}_v2_imp_QC_HRC\
+          --clump /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz \
+          --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
+          --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL.clump"
+          
+# Send qsub
+qsubshcom "$tmp_command" 1 150G clumping_plink 30:00:00 "-array=1-22"
+```
+
+
+It is more handy to have only one file with all the chromosome. Let's build it:
+```{bash, eval=FALSE}
+# good folder
+cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
+
+# concatenate
+cat *clumped | grep "CHR" | head -1 > result_GWAS_bloodpressure_plink_clumped
+cat CLUMP*clumped | grep -v "CHR" |sed '/^$/d'  >> result_GWAS_bloodpressure_plink_clumped
+
+# Transfert it locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_plink_clumped  .
 ```
 
 
@@ -183,7 +183,127 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 
 
 
-#- Run GSMR
+
+
+
+
+
+
+#- SMR {.tabset .tabset-fade .tabset-pills}
+***
+This GWAS result suggest an oligogenic control of the VitaminD concentration. About 5 major loci are described. We can un an SMR analysis to go deeper and find out what genes are probably involved in the control of VitaminD.
+
+To run SMR several datasets are required:
+
+- **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
+- **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
+- **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
+- **out**: the output name.
+
+Run General SMR:
+```{bash, eval=FALSE}
+# Good directory
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
+
+# Run the analysis
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
+qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
+
+# Concatenate chromosome results
+cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
+cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
+```
+
+
+
+#ILMN_2131381
+***
+Get the data for the plot
+```{bash, eval=FALSE}
+# Good folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
+
+# Load the position of genes:
+wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
+
+# Send smr plot for this loci
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_2131381	 --probe-wind 500 --gene-list /home/y.holtz/BLOOD_GWAS/5_SMR/glist-hg18"
+qsubshcom "$tmp_command" 1 30G smr_plot_BloodPressure_loc1 10:00:00 ""
+
+# cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
+```
+
+```{r, fig.align="center", fig.width=12, fig.height=9}
+# Make the plot
+source("SCRIPT/plot_SMR.r") 
+# Read the data file in R:
+SMRData = ReadSMRData("0_DATA/myplot.ILMN_2131381.txt")
+# Plot the SMR results in a genomic region centred around a probe:
+SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
+```
+
+
+##Table
+```{r}
+data=read.table("0_DATA/smr_VitaminDXiaEtAl.smr", header=T)
+```
+The general SMR result provides `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. Here an overview of the result
+
+```{r, message=FALSE, warning=FALSE}
+datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX = "(500px") )
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+A few summary statistics on this table:  
+
+##Line per K
+Total number of line in the SMR output: `r nrow(data)`
+```{r}
+data %>%
+  group_by(ProbeChr) %>%
+  count() %>%
+  arrange(n) %>%
+  ungroup() %>%
+  mutate( ProbeChr=factor(ProbeChr, ProbeChr)) %>%
+  ggplot( aes(x=ProbeChr, y=n)) +
+    geom_segment( aes(x=ProbeChr, xend=ProbeChr, y=0, yend=n), color="grey") +
+    geom_point(size=3, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_blank())
+```
+
+##Signif SMR
+Total number of line in the SMR output with pSMR < 10e-8: `r data %>% filter(p_SMR<10e-8) %>% nrow() `
+```{r}
+data %>%
+  filter(p_SMR<0.000001)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#- GSMR {.tabset .tabset-fade .tabset-pills}
 ***
 The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)
 ```{bash, eval=FALSE}
@@ -224,15 +344,6 @@ qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-88"
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
 ```
-
-
-
-
-
-
-
-#- Results {.tabset .tabset-fade .tabset-pills}
-***
 
 First I transfer the results locally for further analysis.
 ```{bash, eval=FALSE}
@@ -316,8 +427,18 @@ gsmr %>%
 
 #- Conclusion
 ***
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
 - GSMR analysis reveals that vitamin-D concentration has a causal effect on Hypertension and Allergic Rhinitis. The related effect size are positive, what means that having more vitamin-D increases your chance to develop these 2 diseases.. Does it make sense?  
 
 - There is a slight link with Iron deficiency and insomnia with a negative size effect. This would make more sense: less vitamin --> more insomnia and less Iron.  
 
 - Promising result knowing the lack of power we have here (vitamin-D GWAS run with a sample size of 80k people only). Looking forward for the UKB data.
+
+</div>
+
+
+

@@ -109,7 +109,7 @@ nb_signif=nrow(signif)
 
 The GWAS has been run on **`r nb_snp` SNPs**. `r nb_signif` SNPs showed a significant association (with a 10^-8 threshold).  Here is a manhattan plot summarizing the results. The genetic determinism of VitaminD is oligogenic: controlled by a few major loci.
 ```{r, fig.width=9, fig.heigth=8}
-manhattan(data[which(data$P<0.05) , ], chr = 'CHR', bp = 'BP', p='P', snp = 'SNP', suggestiveline = 5, genomewideline = 8, annotatePval=0.0000001, ylim=c(0,200))
+manhattan(data[which(data$P<0.05) , ], chr = 'CHR', bp = 'BP', p='P', snp = 'SNP', suggestiveline = 5, genomewideline = 8, annotatePval=0.0000001, ylim=c(0,400))
 ```
 
 
@@ -117,6 +117,43 @@ Here is a list of all the significant assoc:
 ```{r}
 datatable(signif, rownames = FALSE, options = list(pageLength = 5) )
 ```
+
+##Loci {.tabset .tabset-fade .tabset-pills}
+Let's try to summarize the associations that have been discovered. There are 6 main associations:
+
+- **rs3755967**: chromosome 4 ~ 73Mb | gene: GC
+- **rs12785878**: chromosome 11 ~ 79Mb | gene: NADSYN1 / DHCR7
+- **rs10741657**: chromosome 11 ~ 15Mb | gene: CYP2R1
+- **rs17216707**: chromosome 20 ~ 52Mb | gene: CYP24A1
+- **rs10745742**: chromosome 12 ~ 94Mb | gene: AMDHD1
+- **rs8018720**: chromosome 14 ~ 38Mb | gene: SEC23A
+
+I can use [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) to visualise the regions of interest and see the underlying genes. Just requires the .linear result of PLINK on it, and specify the SNP of interest. Here is the result SNP per SNP:
+
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+###rs3755967
+![](IMG/VitaminD_XiaEtAl.rs3755967.png)
+
+###rs12785878
+![](IMG/VitaminD_XiaEtAl.rs12785878.png)
+
+###rs10741657
+![](IMG/VitaminD_XiaEtAl.rs10741657.png)
+
+###rs17216707
+![](IMG/VitaminD_XiaEtAl.rs17216707.png)
+
+###rs10745742
+![](IMG/VitaminD_XiaEtAl.rs10745742.png)
+
+###rs8018720
+![](IMG/VitaminD_XiaEtAl.rs8018720.png)
+
+
 
 
 ##Clumping
@@ -134,7 +171,7 @@ cd /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING
 
 # Prepare command
 tmp_command="plink \
-          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impHRC/ukbEURu_imp_chr{TASK_ID}_v2_imp_QC_HRC\
+          --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --clump /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz \
           --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
           --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL.clump"
@@ -160,6 +197,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS
 
 
 
+
 ##FUMA
 a FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). Password required.
 ```{bash, eval=FALSE}
@@ -169,17 +207,8 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vit
 ```
 
 
-##LocusZoom
-I can use the [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) online tool to visualise the regions of interest and see the underlying genes.
-Just put the .linear result of PLINK on it, and specify the SNP of interest.
-It gives me this result for the SNP rs12785878 and can be easily done for any other SNP.
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
 
-![snp](IMG/rs12785878_BloodPressure_LocusZoom.png)
 
 
 
@@ -220,7 +249,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/smr_Vita
 
 
 
-#ILMN_2131381
+##ILMN_2131381
 ***
 Get the data for the plot
 ```{bash, eval=FALSE}

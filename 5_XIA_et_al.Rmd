@@ -3,10 +3,18 @@ title: "vitamin D GWAS sumstat from Xia et al"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
+
+
+
+
 ```{r echo=FALSE}
 # Just to add space between the introduction of the document
 knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+knitr::opts_chunk$set(echo = TRUE, fig.align="center")
 ```
+
+
+
 
 > This document report the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). Vitamin D is considered as the risk factor, and its potential implication with ~80 diseases is studied.
 
@@ -156,28 +164,35 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 
 
 
-##Clumping
-First of all I can run the plink clumping algorithm on this GWAS summary statistics to hae an insight of the unique association loci. Here are the clumping options I've used:  
 
-- p1 is the Significance threshold for an association
-- p2 is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. 
-- r2 is the LD threshold for clumping and 
-- clump-kb is the physical distance threshold for clumping
+##Clumping
+First of all I can run the [plink clumping algorithm](http://zzz.bwh.harvard.edu/plink/clump.shtml) on this GWAS summary statistics to hae an insight of the unique association loci. Here are the clumping options I've used. Note: GWAS summary file must NOT be zipped.
+
+- **p1** is the Significance threshold for an association
+- **p2** is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. 
+- **r2** is the LD threshold for clumping and 
+- **clump-kb** is the physical distance threshold for clumping
 
 
 ```{bash, eval=FALSE}
 # good folder
 cd /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING
 
+# Sum stat of each chromosome
+for i in $(seq 1 22) ; do
+  cat /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear | head -1  > file_chr_${i}
+  cat /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear | grep "^${i} " >> file_chr_${i}
+done
+
 # Prepare command
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
-          --clump /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz \
+          --clump file_chr_{TASK_ID} \
           --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
-          --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL.clump"
+          --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL_.clump_chr{TASK_ID}"
           
 # Send qsub
-qsubshcom "$tmp_command" 1 150G clumping_plink 30:00:00 "-array=1-22"
+qsubshcom "$tmp_command" 1 50G clumping_plink 30:00:00 "-array=1-22"
 ```
 
 
@@ -187,19 +202,21 @@ It is more handy to have only one file with all the chromosome. Let's build it:
 cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
 
 # concatenate
-cat *clumped | grep "CHR" | head -1 > result_GWAS_bloodpressure_plink_clumped
-cat CLUMP*clumped | grep -v "CHR" |sed '/^$/d'  >> result_GWAS_bloodpressure_plink_clumped
+cat *clumped | grep "CHR" | head -1 > result_GWAS_VitaminD_XiaEtAl_clumped
+cat GWAS*clumped | grep -v "CHR" | sed '/^$/d' | grep -v "NA"  >> result_GWAS_VitaminD_XiaEtAl_clumped
 
 # Transfert it locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_plink_clumped  .
 ```
 
+The clumping results are not satisfying yet. I've got several loci where I'm suppose to have only one. I do not have anything on chromosome 14 where I have a significant association.
 
 
 
 ##FUMA
 a FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). Password required.
+Discuss FUMA results.
 ```{bash, eval=FALSE}
 # transfer locally for FUMA?
 cd /Users/y.holtz/Desktop
@@ -218,9 +235,15 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vit
 
 
 
-#- SMR {.tabset .tabset-fade .tabset-pills}
+#- SMR
 ***
-This GWAS result suggest an oligogenic control of the VitaminD concentration. About 5 major loci are described. We can un an SMR analysis to go deeper and find out what genes are probably involved in the control of VitaminD.
+```{r echo=FALSE}
+# Just to add space between the introduction of the document
+knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+```
+
+##Method
+The GWAS result suggests an oligogenic control of the VitaminD concentration. Six major loci are described, with several genes present in the corresponding regions. We can run an [SMR analysis](http://cnsgenomics.com/software/smr/#Overview) to go deeper and find out what genes are probably involved in the control of VitaminD.
 
 To run SMR several datasets are required:
 
@@ -229,7 +252,23 @@ To run SMR several datasets are required:
 - **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
 - **out**: the output name.
 
-Run General SMR:
+ 
+<br><br>
+<div align="center">
+![Figure: Association between gene expression and phenotype trough genotypes. (a) A model of cqusqlity where a difference in phenotype is caused by a diffference in genotype mediated by gene expression (transcription). (b) Three possible explanations for an observed association between a trait and gene expression through genotypes. From Zhihong Zhu et al.](IMG/smr_explanation.png)
+</div>
+<br><br>
+
+If an association between a gene and VitaminD is detected, several option exist (figure b): 
+
+- **Causality** or **Pleiotropy**: in this case the Heidi test will be significant
+- **Linkage**: in this case the Heidi test won't be significant.
+
+
+<br><br>
+
+##Run SMR
+The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait. See the table tab for result.
 ```{bash, eval=FALSE}
 # Good directory
 cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
@@ -247,11 +286,23 @@ cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
 ```
 
+```{r}
+data=read.table("0_DATA/smr_VitaminDXiaEtAl.smr", header=T)
+```
+The general SMR result provides one line per significant eQTL: **`r nrow(data)` eQTLs** (association between probe and gene expression) are available in the dataset. This concerns `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. What really interests us is the number of significant causal association that are detected. 
 
 
-##ILMN_2131381
-***
-Get the data for the plot
+
+<br>
+
+##Only 1 gene's association
+
+Only **one causal association** has been detected. The probe ILMN_2131381 (14,84 Mb) that represents the genes PDE3B (full name = [phosphodiesterase 3B](https://www.ncbi.nlm.nih.gov/gene/5140)) as a causal effect on VitaminD (pSMR < 10e-8). The instrument used to determine this association is the snp rs12283049 (14,65 Mb). Here is a zoom on the chromosome 11 around 15Mb where this association takes place.  
+
+This association is **directly related** with one of the loci detected in the GWAS (snp rs10741657 in the gene CYP2R1 in the same area). It is of interest that the genes PDE3B and CYP2R1 are really close one to each other (See the locus zoom figure above). The gene CYP2R1 is not involved in any eQTL tough. The only other eQTLs available in this region concern the genes COPB1 and INSC, that are not significantly causal for vitaminD.
+
+Note: need to understand the HEIDI story.
+
 ```{bash, eval=FALSE}
 # Good folder
 cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
@@ -268,7 +319,7 @@ cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
 ```
 
-```{r, fig.align="center", fig.width=12, fig.height=9}
+```{r, fig.align="center", fig.width=12, fig.height=9, fig.cap="Figure: SMR Result at the PDE3B locus for VitaminD. Top plot, brown brown dots represent the P values for SNPs from the GWAS analysis of Xia et al.. Diamonds represent the P values for probes from the SMR test. Bottom plot, the eQTL P values of SNPs from the Westra study for the ILMN_2131381 probe tagging PDE3B. The top and the bottom plots include all the SNPs available in the region in the GWAS ad eQTL summary data, respectivly, rather than only the SNPs common o both data sets. Highlighted in red is the gene PDE3B that passed the SMR test but not the HEIDI test."}
 # Make the plot
 source("SCRIPT/plot_SMR.r") 
 # Read the data file in R:
@@ -277,46 +328,25 @@ SMRData = ReadSMRData("0_DATA/myplot.ILMN_2131381.txt")
 SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
 ```
 
-
-##Table
-```{r}
-data=read.table("0_DATA/smr_VitaminDXiaEtAl.smr", header=T)
-```
-The general SMR result provides `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. Here an overview of the result
-
-```{r, message=FALSE, warning=FALSE}
-datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX = "(500px") )
+```{r, fig.align="center", fig.width=7, fig.height=5}
+SMREffectPlot(data=SMRData, trait_name="VitaminD") 
 ```
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
-A few summary statistics on this table:  
 
-##Line per K
-Total number of line in the SMR output: `r nrow(data)`
-```{r}
-data %>%
-  group_by(ProbeChr) %>%
-  count() %>%
-  arrange(n) %>%
-  ungroup() %>%
-  mutate( ProbeChr=factor(ProbeChr, ProbeChr)) %>%
-  ggplot( aes(x=ProbeChr, y=n)) +
-    geom_segment( aes(x=ProbeChr, xend=ProbeChr, y=0, yend=n), color="grey") +
-    geom_point(size=3, color="orange") +
-    coord_flip() +
-    theme_bw() +
-    theme( panel.grid.major.y = element_blank())
-```
-
-##Signif SMR
-Total number of line in the SMR output with pSMR < 10e-8: `r data %>% filter(p_SMR<10e-8) %>% nrow() `
+A few details for this causal associations:
 ```{r}
 data %>%
   filter(p_SMR<0.000001)
 ```
+
+A list of all the result is available here:
+```{r, message=FALSE, warning=FALSE}
+datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
+```
+
+
+
+
 
 
 

@@ -103,28 +103,75 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vit
 
 
 ##Manhattan
-```{r,  message=FALSE, warning=FALSE}
-# Read data
-data <- read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.light.gz", col_names=T, delim=" ")
-#data=data[ sample(seq(1,nrow(data)), 100000) , ]
+```{r, warning=F, message=F}
+# Read result
+data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.light.gz", col_names=T, delim=" ")
+data$CHR=as.factor(data$CHR)
+#data=data[ sample(seq(1,nrow(data)), 10000) , ]
 
-# Calculate a few sumstat?
-nb_snp=nrow(data)
-signif = data %>% filter(P<0.00000001) %>% arrange(CHR, BP)
-nb_signif=nrow(signif)
+# Read after clumping data
+clump=read.table("0_DATA/result_GWAS_VitaminD_XiaEtAl_clumped", header=T)
+
+# A list of all SNPs implicated in an association? 
+Hit_SNP <- c( 
+  as.character(clump$SNP), 
+  strsplit(as.character(clump$SP2), ',', fixed=TRUE) %>% unlist() %>% gsub("\\(.\\)", "", .) 
+)
+Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
+```
+sk
+```{r, fig.width=13, fig.height=8, warning=FALSE }
+
+# -------- Add cumulative position + clumping information to data
+don <- data %>% 
+  
+  # Compute chromosome size and merge this info to the GWAS result
+  group_by(CHR) %>% 
+  summarise(chr_len=max(BP)) %>% 
+  mutate(tot=cumsum(chr_len)-chr_len) %>%
+  select(-chr_len) %>%
+  left_join(data, ., by=c("CHR"="CHR")) %>%
+  
+  # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
+  filter( P<0.03 | SNP %in% sample(data$SNP, 150000)) %>%
+  
+  # Add a cumulative position colummn to the data set
+  arrange(CHR, BP) %>%
+  mutate( BPcum=BP+tot) %>%
+  
+  # Add clumping information
+  mutate( is_major=ifelse(SNP %in% clump$SNP & P<10e-8, "yes", "no")) %>%
+  mutate( is_clump=ifelse(SNP %in% Hit_SNP, "yes", "no"))
+  
+# -------- prepare X axis
+axisdf = don %>% group_by(CHR) %>% summarize(center=( max(BPcum) + min(BPcum) ) / 2 )
+  
+
+# -------- Make the plot
+ggplot(don, aes(x=BPcum, y=-log10(P))) +
+    
+    # Show all points
+    geom_point( aes(color=as.factor(CHR)), alpha=0.3, size=0.5) +
+    scale_color_manual(values = rep(c("grey", "pink"),44)) +
+    
+    # Add highlighted points for significant association:
+    geom_point(data=subset(don, is_clump=="yes"), color="orange", size=0.2) +
+    geom_point(data=subset(don, is_major=="yes"), color="red", size=4) +
+    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2) +
+      
+    # Make X axis:
+    scale_x_continuous( label = axisdf$CHR, breaks= axisdf$center ) +
+  
+    theme_bw() +
+    theme( 
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    )
 ```
 
 
-The GWAS has been run on **`r nb_snp` SNPs**. `r nb_signif` SNPs showed a significant association (with a 10^-8 threshold).  Here is a manhattan plot summarizing the results. The genetic determinism of VitaminD is oligogenic: controlled by a few major loci.
-```{r, fig.width=9, fig.heigth=8}
-manhattan(data[which(data$P<0.05) , ], chr = 'CHR', bp = 'BP', p='P', snp = 'SNP', suggestiveline = 5, genomewideline = 8, annotatePval=0.0000001, ylim=c(0,400))
-```
-
-
-Here is a list of all the significant assoc:
-```{r}
-datatable(signif, rownames = FALSE, options = list(pageLength = 5) )
-```
 
 ##Loci {.tabset .tabset-fade .tabset-pills}
 Let's try to summarize the associations that have been discovered. There are 6 main associations:
@@ -188,7 +235,7 @@ done
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --clump file_chr_{TASK_ID} \
-          --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0.50 --clump-kb 500 \
+          --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0 --clump-kb 500 \
           --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL_.clump_chr{TASK_ID}"
           
 # Send qsub
@@ -199,7 +246,7 @@ qsubshcom "$tmp_command" 1 50G clumping_plink 30:00:00 "-array=1-22"
 It is more handy to have only one file with all the chromosome. Let's build it:
 ```{bash, eval=FALSE}
 # good folder
-cd /home/y.holtz/BLOOD_GWAS/2_CLUMPING
+cd ~/VITAMIND_XIA_ET_AL/2_CLUMPING
 
 # concatenate
 cat *clumped | grep "CHR" | head -1 > result_GWAS_VitaminD_XiaEtAl_clumped
@@ -207,7 +254,7 @@ cat GWAS*clumped | grep -v "CHR" | sed '/^$/d' | grep -v "NA"  >> result_GWAS_Vi
 
 # Transfert it locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/result_GWAS_bloodpressure_plink_clumped  .
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/result_GWAS_VitaminD_XiaEtAl_clumped  .
 ```
 
 The clumping results are not satisfying yet. I've got several loci where I'm suppose to have only one. I do not have anything on chromosome 14 where I have a significant association.

@@ -56,7 +56,7 @@ Hit_SNP <- c(
 )
 Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
 ```
-sk
+
 ```{r, fig.width=13, fig.height=6, warning=FALSE }
 
 # -------- Add cumulative position + clumping information to data
@@ -239,13 +239,12 @@ To run SMR several datasets are required:
 
 - **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
 - **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
-- **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
-- **out**: the output name.
+- **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
 
  
 <br><br>
 <div align="center">
-![Figure: Association between gene expression and phenotype trough genotypes. (a) A model of cqusqlity where a difference in phenotype is caused by a diffference in genotype mediated by gene expression (transcription). (b) Three possible explanations for an observed association between a trait and gene expression through genotypes. From Zhihong Zhu et al.](IMG/smr_explanation.png)
+![Figure: Association between gene expression and phenotype trough genotypes. (a) A model of causality where a difference in phenotype is caused by a diffference in genotype mediated by gene expression (transcription). (b) Three possible explanations for an observed association between a trait and gene expression through genotypes. From Zhihong Zhu et al.](IMG/smr_explanation.png)
 </div>
 <br><br>
 
@@ -290,8 +289,6 @@ The general SMR result provides one line per significant eQTL: **`r nrow(data)` 
 Only **one causal association** has been detected. The probe ILMN_2131381 (14,84 Mb) that represents the genes PDE3B (full name = [phosphodiesterase 3B](https://www.ncbi.nlm.nih.gov/gene/5140)) as a causal effect on VitaminD (pSMR < 10e-8). The instrument used to determine this association is the snp rs12283049 (14,65 Mb). Here is a zoom on the chromosome 11 around 15Mb where this association takes place.  
 
 This association is **directly related** with one of the loci detected in the GWAS (snp rs10741657 in the gene CYP2R1 in the same area). It is of interest that the genes PDE3B and CYP2R1 are really close one to each other (See the locus zoom figure above). The gene CYP2R1 is not involved in any eQTL tough. The only other eQTLs available in this region concern the genes COPB1 and INSC, that are not significantly causal for vitaminD.
-
-Note: need to understand the HEIDI story.
 
 ```{bash, eval=FALSE}
 # Good folder
@@ -498,7 +495,7 @@ datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 5) 
 
 
 ##Pvalues
-Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance, but this significance is not strong enough to pass a multiple test correction threshold.
+Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance. But this does not account for multiple testing.
 ```{r, fig.align="center", message=FALSE, warning=FALSE, fig.height=14, fig.width=8}
 gsmr %>% 
   arrange(desc(p)) %>%

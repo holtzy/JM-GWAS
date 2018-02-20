@@ -1,5 +1,5 @@
 ---
-title: "vitamin D GWAS sumstat from Xia et al"
+title: "An overview of the Vitamin D GWAS sumstat from Xia et al."
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE, fig.align="center")
 
 
 
-> This document report the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). Vitamin D is considered as the risk factor, and its potential implication with ~80 diseases is studied.
+> This document describes the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). It also reports the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to this dataset, using Vitamin D as the risk factor, and testing its potential implication with ~80 diseases.
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -33,76 +33,13 @@ library(ggrepel)
 
 
 
-
-
-
-#- Data
-***
-
-To run a GSMR analysis we need:
-
-- A risk factor GWAS summary statistics. [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2) recently published a GWAS on Vitamin-D, with a sample size of about 80k people. Let's load this data, and transfer it on the delta cluster. Note that a light version of this file (with p<0.1) is available [here](https://github.com/holtzy/VitaminD-GWAS/tree/master/0_DATA)
-```{bash, eval=FALSE}
-# First transfert VitaminD data from Inode localy
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
-
-# Then from locally to delta
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/VITAMIND_XIA_ET_AL
-
-# good to delta folder
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
-
-# I miss the frequence of the major allele in this file. I can use the hapmap3 frequencies previously calculated
-cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
-
-# --- MA FORMAT --- make the file with this new column, transform it in a format suitable for GSMR.
-echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
-join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print $1, $3}' /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
-
-# --- LINEAR FORMAT --- make a .linear format suitable for PLINK or FUMA
-echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > GWAS_vitaminD_XiaEtAL.linear
-zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $13, $1, $12, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
-R  # We need to remove the 10^5 format for 100000 format
-data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
-data$BP = round(data$BP, 0)
-options(scipen=500)
-write.table(data, file="GWAS_vitaminD_XiaEtAL.linear", quote=F, row.names=FALSE )
-
-# --- LIGHT FORMAT --- make a light version for github
-cat GWAS_vitaminD_XiaEtAL.linear | head -1 >  GWAS_vitaminD_XiaEtAL.linear.light
-cat GWAS_vitaminD_XiaEtAL.linear | awk '{if( $9 < 0.1){print $0}}' >>  GWAS_vitaminD_XiaEtAL.linear.light
-gzip GWAS_vitaminD_XiaEtAL.linear.light
-
-# Transfer locally?
-cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.light.gz .
-
-```
-
-
-- GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information:
-
-    + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
-    
-    + 66 other diseases already used in the [GSMR paper by Zhihong et al](https://www.nature.com/articles/s41467-017-02317-2). These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
-
-
-
-
-
-
-
-
-
-
 #- Vitamin-D GWAS: description {.tabset .tabset-fade .tabset-pills}
 ***
 
 
 
 ##Manhattan
+The genetic determinism of Vitamin-D appears to be **oligogenic** with about 6 loci involved. The association on chromosome 4 is impressive, with a -log(p-value) > 300.
 ```{r, warning=F, message=F}
 # Read result
 data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.light.gz", col_names=T, delim=" ")
@@ -120,7 +57,7 @@ Hit_SNP <- c(
 Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
 ```
 sk
-```{r, fig.width=13, fig.height=8, warning=FALSE }
+```{r, fig.width=13, fig.height=6, warning=FALSE }
 
 # -------- Add cumulative position + clumping information to data
 don <- data %>% 
@@ -174,21 +111,18 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
 
 
 ##Loci {.tabset .tabset-fade .tabset-pills}
-Let's try to summarize the associations that have been discovered. There are 6 main associations:
+There are 6 main associations:
 
-- **rs3755967**: chromosome 4 ~ 73Mb | gene: GC
-- **rs12785878**: chromosome 11 ~ 79Mb | gene: NADSYN1 / DHCR7
-- **rs10741657**: chromosome 11 ~ 15Mb | gene: CYP2R1
-- **rs17216707**: chromosome 20 ~ 52Mb | gene: CYP24A1
-- **rs10745742**: chromosome 12 ~ 94Mb | gene: AMDHD1
-- **rs8018720**: chromosome 14 ~ 38Mb | gene: SEC23A
+- **rs3755967**:  chromosome 4 ~ 73Mb | gene: GC | [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr4%3A71004093%2D72598593&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
+- **rs12785878**: chromosome 11 ~ 79Mb | gene: NADSYN1 / DHCR7 | [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr11%3A71456153%2D71456652&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
+- **rs10741657**: chromosome 11 ~ 15Mb | gene: CYP2R1| [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr11%3A14888332%2D14898331&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
+- **rs17216707**: chromosome 20 ~ 52Mb | gene: CYP24A1| [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr20%3A51610823%2D56620822&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
+- **rs10745742**: chromosome 12 ~ 94Mb | gene: AMDHD1| [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr12%3A95939701%2D95989800&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
+- **rs8018720**:  chromosome 14 ~ 38Mb | gene: SEC23A| [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr14%3A39086731%2D39087231&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
 
-I can use [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) to visualise the regions of interest and see the underlying genes. Just requires the .linear result of PLINK on it, and specify the SNP of interest. Here is the result SNP per SNP:
+[Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) allows to visualise the regions of interest and see the underlying genes. Just requires the .linear result of PLINK on it, and specify the SNP of interest. Here is the result SNP per SNP:
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
+<br><br>
 
 ###rs3755967
 ![](IMG/VitaminD_XiaEtAl.rs3755967.png)
@@ -262,14 +196,23 @@ The clumping results are not satisfying yet. I've got several loci where I'm sup
 
 
 ##FUMA
-a FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). Password required.
-Discuss FUMA results.
+A FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). 
+
+- Id: y.holtz@uq.edu.au 
+- Psw: fumayanholtz
 ```{bash, eval=FALSE}
 # transfer locally for FUMA?
 cd /Users/y.holtz/Desktop
 scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz .
 ```
 
+A few thoughts on the FUMA analysis:
+
+- It looks like a lot of SNP are missing in their manhattan plot version
+- Only one Genomic risk loci is reported. Chromosome 4, on SNP rs113227722 at position 71316300. It's weird it is not the best SNP of this area. It has a very low MAF: 0.04.  
+- The gene-based test outputs only one significant genes: MUC7 in the chromosome 4 area. This is not what I excpected, not what is described in Xia et al.
+
+--> These results are very weird, I need to investigate further why FUMA does not work properly.
 
 
 
@@ -411,6 +354,57 @@ datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, s
 
 #- GSMR {.tabset .tabset-fade .tabset-pills}
 ***
+
+To run a GSMR analysis we need:
+
+- A risk factor GWAS summary statistics. [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2) recently published a GWAS on Vitamin-D, with a sample size of about 80k people. Let's load this data, and transfer it on the delta cluster. Note that a light version of this file (with p<0.1) is available [here](https://github.com/holtzy/VitaminD-GWAS/tree/master/0_DATA)
+```{bash, eval=FALSE}
+# First transfert VitaminD data from Inode localy
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
+
+# Then from locally to delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/VITAMIND_XIA_ET_AL
+
+# good to delta folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
+
+# I miss the frequence of the major allele in this file. I can use the hapmap3 frequencies previously calculated
+cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
+
+# --- MA FORMAT --- make the file with this new column, transform it in a format suitable for GSMR.
+echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
+join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print $1, $3}' /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
+
+# --- LINEAR FORMAT --- make a .linear format suitable for PLINK or FUMA
+echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > GWAS_vitaminD_XiaEtAL.linear
+zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $13, $1, $12, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
+R  # We need to remove the 10^5 format for 100000 format
+data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
+data$BP = round(data$BP, 0)
+options(scipen=500)
+write.table(data, file="GWAS_vitaminD_XiaEtAL.linear", quote=F, row.names=FALSE )
+
+# --- LIGHT FORMAT --- make a light version for github
+cat GWAS_vitaminD_XiaEtAL.linear | head -1 >  GWAS_vitaminD_XiaEtAL.linear.light
+cat GWAS_vitaminD_XiaEtAL.linear | awk '{if( $9 < 0.1){print $0}}' >>  GWAS_vitaminD_XiaEtAL.linear.light
+gzip GWAS_vitaminD_XiaEtAL.linear.light
+
+# Transfer locally?
+cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.light.gz .
+
+```
+
+
+- GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information:
+
+    + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
+    
+    + 66 other diseases already used in the [GSMR paper by Zhihong et al](https://www.nature.com/articles/s41467-017-02317-2). These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
+
+
 The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)
 ```{bash, eval=FALSE}
 # First transfert localy

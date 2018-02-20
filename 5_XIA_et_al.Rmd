@@ -1,5 +1,5 @@
 ---
-title: "An overview of the Vitamin D GWAS sumstat from Xia et al."
+title: "GWAS on Vitamin-D:  overview of Xia et al. publication"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
@@ -33,13 +33,13 @@ library(ggrepel)
 
 
 
-#- Vitamin-D GWAS: description {.tabset .tabset-fade .tabset-pills}
+#- Vitamin-D GWAS: description {.tabset }
 ***
 
 
 
 ##Manhattan
-The genetic determinism of Vitamin-D appears to be **oligogenic** with about 6 loci involved. The association on chromosome 4 is impressive, with a -log(p-value) > 300.
+The genetic determinism of Vitamin-D appears to be **oligogenic** with about 6 loci involved. The association on chromosome 4 is very strong, with a -log(p-value) > 300.
 ```{r, warning=F, message=F}
 # Read result
 data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.light.gz", col_names=T, delim=" ")
@@ -94,7 +94,7 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
     # Add highlighted points for significant association:
     geom_point(data=subset(don, is_clump=="yes"), color="orange", size=0.2) +
     geom_point(data=subset(don, is_major=="yes"), color="red", size=4) +
-    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2) +
+    geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2.8) +
       
     # Make X axis:
     scale_x_continuous( label = axisdf$CHR, breaks= axisdf$center ) +
@@ -147,7 +147,7 @@ There are 6 main associations:
 
 
 ##Clumping
-First of all I can run the [plink clumping algorithm](http://zzz.bwh.harvard.edu/plink/clump.shtml) on this GWAS summary statistics to hae an insight of the unique association loci. Here are the clumping options I've used. Note: GWAS summary file must NOT be zipped.
+I run the [plink clumping algorithm](http://zzz.bwh.harvard.edu/plink/clump.shtml) on this GWAS summary statistics to have an insight of the unique association loci. Here are the clumping options I've used. Note: GWAS summary file must NOT be zipped.
 
 - **p1** is the Significance threshold for an association
 - **p2** is Secondary significance threshold for clumped SNPs = SNPs that are part of the association, but not pic. 
@@ -225,7 +225,7 @@ A few thoughts on the FUMA analysis:
 
 
 
-#- SMR
+#- SMR {.tabset }
 ***
 ```{r echo=FALSE}
 # Just to add space between the introduction of the document
@@ -248,7 +248,7 @@ To run SMR several datasets are required:
 </div>
 <br><br>
 
-If an association between a gene and VitaminD is detected, several option exist (figure b): 
+If an association between a gene and VitaminD is detected (figure a), several options exist (figure b): 
 
 - **Causality** or **Pleiotropy**: in this case the Heidi test will be significant
 - **Linkage**: in this case the Heidi test won't be significant.
@@ -257,7 +257,7 @@ If an association between a gene and VitaminD is detected, several option exist 
 <br><br>
 
 ##Run SMR
-The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait. See the table tab for result.
+The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
 ```{bash, eval=FALSE}
 # Good directory
 cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
@@ -322,9 +322,10 @@ SMREffectPlot(data=SMRData, trait_name="VitaminD")
 
 A few details for this causal associations:
 ```{r}
-data %>%
-  filter(p_SMR<0.000001)
+datatable(data %>% filter(p_SMR<0.000001), rownames = FALSE, options = list(pageLength = 5, scrollX=T, dom='t') )
 ```
+
+<br><br>
 
 A list of all the result is available here:
 ```{r, message=FALSE, warning=FALSE}
@@ -349,8 +350,10 @@ datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, s
 
 
 
-#- GSMR {.tabset .tabset-fade .tabset-pills}
+#- GSMR {.tabset }
 ***
+
+## Method
 
 To run a GSMR analysis we need:
 
@@ -399,7 +402,7 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vit
 
     + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
     
-    + 66 other diseases already used in the [GSMR paper by Zhihong et al](https://www.nature.com/articles/s41467-017-02317-2). These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
+    + 66 other diseases provided by different publications. These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
 
 
 The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)
@@ -457,8 +460,6 @@ Here is how the result of GSMR looks like:
 - **p** is the pvalue of the association test. A first approach would be to consider the test significant with a usual 0.05 threshold. However we probably need to correct for multiple testing since we run the test several times.
 - **nsnp** is the number of SNP with a significant effect on the Exposure. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.
 
-Results are displayed using 3 different ways:
-
 ```{r}
 gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
 ```
@@ -467,10 +468,17 @@ gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
 
 
 ##Effect size
-And here is a description of the effect sizes (bxy): the effect of the risk factor on the disease:
-```{r, fig.align="center", fig.height=10, fig.width=8, warning=FALSE}
-gsmr %>% 
+And here is a description of the effect sizes (bxy): the effect of the risk factor on the disease. A few observation:
+
+- `r gsmr %>% filter(p<0.05) %>% nrow()` significant associations (without multiple testing correction tough). 
+- `r gsmr %>% filter(p<0.05 & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
+- `r gsmr %>% filter(p<0.05 & bxy<0) %>% nrow()` have a negative effect size.
+
+
+```{r, fig.align="center", fig.height=10, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show significance with a treshold of 0.05 for the p-value. Blue lines show the standard error around the effect size."}
+gsmr %>%
   arrange(bxy) %>%
+  filter(!is.na(bxy) ) %>% 
   mutate(Outcome=factor(Outcome, Outcome)) %>%
   mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
   ggplot( aes(x=Outcome, y=bxy)) +
@@ -479,8 +487,8 @@ gsmr %>%
     geom_point(aes(color=significance), size=4) +
     scale_color_manual( values=c("grey", "orange")) +
     coord_flip() +
-    theme_light() +
-    theme( panel.grid.major.y = element_blank()) +
+    theme_bw() +
+    theme( panel.grid.major.y = element_line(size=0.1)) +
     ylab("Bxy (Effect size)") +
     xlab("")
 ```
@@ -488,6 +496,8 @@ gsmr %>%
 
 
 ##Table
+The 85 GSMR test results are displayed in this table in case you need to check a specific value:
+
 ```{r, message=FALSE, warning=FALSE}
 datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 5) )
 ```
@@ -499,6 +509,7 @@ Here is an ordered barplot of the pvalues. We have several traits over the 0.05 
 ```{r, fig.align="center", message=FALSE, warning=FALSE, fig.height=14, fig.width=8}
 gsmr %>% 
   arrange(desc(p)) %>%
+  filter( !is.na(bxy)) %>%
   mutate(Outcome=factor(Outcome, Outcome)) %>%
   mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
   ggplot( aes(x=Outcome, y=-log10(p))) +
@@ -529,11 +540,12 @@ div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
 </style>
 <div class = "blue">
 
-- GSMR analysis reveals that vitamin-D concentration has a causal effect on Hypertension and Allergic Rhinitis. The related effect size are positive, what means that having more vitamin-D increases your chance to develop these 2 diseases.. Does it make sense?  
+- Vitamin-D genetic determinism appears to be oligogenic like described in [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). 6 major loci are associated on chromosome 4, 11, 12, 14 and 20. A few other significant loci could be discovered with more detection power (+sample size). But the manhattan plot suggests an oligogenic control in any case.
 
-- There is a slight link with Iron deficiency and insomnia with a negative size effect. This would make more sense: less vitamin --> more insomnia and less Iron.  
+- Genes GC, NADSYN1 / DHCR7, CYP2R1, CYP24A1, AMDHD1, SEC23A are putative genes under vitamin-D control. However SMR analysis reveals only one gene's association for gene PDE3B. This gene PDE3B is very close from CYP2R1 that is not involved in any eQTL.
 
-- Promising result knowing the lack of power we have here (vitamin-D GWAS run with a sample size of 80k people only). Looking forward for the UKB data.
+- GSMR analysis suggests that vitamin-D concentration has a causal effect on several traits like Hypertension or Alzheimer. This sould be verified using a bigger sample size and multiple testing correction.
+
 
 </div>
 

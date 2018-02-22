@@ -278,11 +278,17 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/smr_Vita
 ```{r}
 data=read.table("0_DATA/smr_VitaminDXiaEtAl.smr", header=T)
 ```
-The general SMR result provides one line per significant eQTL: **`r nrow(data)` eQTLs** (association between probe and gene expression) are available in the dataset. This concerns `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. What really interests us is the number of significant causal association that are detected. 
+The general SMR result provides one line per significant eQTL: **`r nrow(data)` eQTLs** (association between probe and gene expression) are available in the dataset. This concerns `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. What really interests us is the number of significant causal associations that are detected. 
 
+The SMR p-value threshold taking into account multiple testing is 0.05 divided by the number of SMR test. It is thus `r 0.05/nrow(data)`
+```{r}
+thresh <- 0.05 / nrow(data)
+```
 
+The number of signiificant association is `r data %>% filter(p_SMR<thresh) %>% nrow()`
 
 <br>
+
 
 ##Only 1 gene's association
 
@@ -384,6 +390,8 @@ R  # We need to remove the 10^5 format for 100000 format
 data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
 data$BP = round(data$BP, 0)
 options(scipen=500)
+library(dplyr)
+data <- data %>% arrange(CHR, BP)
 write.table(data, file="GWAS_vitaminD_XiaEtAL.linear", quote=F, row.names=FALSE )
 
 # --- LIGHT FORMAT --- make a light version for github
@@ -393,7 +401,10 @@ gzip GWAS_vitaminD_XiaEtAL.linear.light
 
 # Transfer locally?
 cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.light.gz .
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz .
+
+# Note: I need to delete 2 SNPs that have a P of 0 in the R output. Because R rounds them to 0
+more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}'> for_IGV
 
 ```
 
@@ -461,7 +472,14 @@ Here is how the result of GSMR looks like:
 - **nsnp** is the number of SNP with a significant effect on the Exposure. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.
 
 ```{r}
+# Read gsmr result
 gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
+
+# Read the meaning of files:
+meaning=read.table("0_DATA/list_diseases_GWAS_sumstat.csv", header=T, sep=",")
+
+# Add the meaning to gsmr result
+gsmr <- gsmr %>% left_join(., meaning, by=c("Outcome"="code") )
 ```
 
 
@@ -479,11 +497,11 @@ And here is a description of the effect sizes (bxy): the effect of the risk fact
 gsmr %>%
   arrange(bxy) %>%
   filter(!is.na(bxy) ) %>% 
-  mutate(Outcome=factor(Outcome, Outcome)) %>%
+  mutate(name=factor(name, name)) %>%
   mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
-  ggplot( aes(x=Outcome, y=bxy)) +
+  ggplot( aes(x=name, y=bxy)) +
     geom_hline( yintercept=0 ) +
-    geom_segment( aes(x=Outcome, xend=Outcome, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
+    geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
     scale_color_manual( values=c("grey", "orange")) +
     coord_flip() +
@@ -499,7 +517,7 @@ gsmr %>%
 The 85 GSMR test results are displayed in this table in case you need to check a specific value:
 
 ```{r, message=FALSE, warning=FALSE}
-datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 5) )
+datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 15) )
 ```
 
 

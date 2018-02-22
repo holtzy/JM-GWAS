@@ -491,6 +491,7 @@ And here is a description of the effect sizes (bxy): the effect of the risk fact
 - `r gsmr %>% filter(p<0.05) %>% nrow()` significant associations (without multiple testing correction tough). 
 - `r gsmr %>% filter(p<0.05 & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
 - `r gsmr %>% filter(p<0.05 & bxy<0) %>% nrow()` have a negative effect size.
+- A lot of the significant causal effects concern blood related trait / disease.
 
 
 ```{r, fig.align="center", fig.height=10, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show significance with a treshold of 0.05 for the p-value. Blue lines show the standard error around the effect size."}

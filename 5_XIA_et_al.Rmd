@@ -290,7 +290,7 @@ The number of signiificant association is `r data %>% filter(p_SMR<thresh) %>% n
 <br>
 
 
-##Only 1 gene's association
+##Only 1 gene association
 
 Only **one causal association** has been detected. The probe ILMN_2131381 (14,84 Mb) that represents the genes PDE3B (full name = [phosphodiesterase 3B](https://www.ncbi.nlm.nih.gov/gene/5140)) as a causal effect on VitaminD (pSMR < 10e-8). The instrument used to determine this association is the snp rs12283049 (14,65 Mb). Here is a zoom on the chromosome 11 around 15Mb where this association takes place.  
 
@@ -528,10 +528,10 @@ Here is an ordered barplot of the pvalues. We have several traits over the 0.05 
 gsmr %>% 
   arrange(desc(p)) %>%
   filter( !is.na(bxy)) %>%
-  mutate(Outcome=factor(Outcome, Outcome)) %>%
+  mutate(name=factor(name, name)) %>%
   mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
-  ggplot( aes(x=Outcome, y=-log10(p))) +
-    geom_segment( aes(x=Outcome, xend=Outcome, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
+  ggplot( aes(x=name, y=-log10(p))) +
+    geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
     scale_color_manual( values=c("grey", "orange")) +
     coord_flip() +

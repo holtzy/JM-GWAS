@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE, fig.align="center")
 
 
 
-> This document describes the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). It also reports the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to this dataset, using Vitamin D as the risk factor, and testing its potential implication with ~80 diseases.
+> This document describes the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). It also reports the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to this dataset, using Vitamin D as the risk factor, and testing its potential implication with ~80 diseases. Data downloaded from [here](https://drive.google.com/drive/folders/0BzYDtCo_doHJRFRKR0ltZHZWZjQ)
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -196,7 +196,7 @@ The clumping results are not satisfying yet. I've got several loci where I'm sup
 
 
 ##FUMA
-A FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). 
+FUMA is a tool for functional mapping and annotation of genetic associations [ref](https://www.nature.com/articles/s41467-017-01261-5). A FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). 
 
 - Id: y.holtz@uq.edu.au 
 - Psw: fumayanholtz
@@ -215,6 +215,17 @@ A few thoughts on the FUMA analysis:
 --> These results are very weird, I need to investigate further why FUMA does not work properly.
 
 
+##About genes position
+
+- Xia et al. locate the SNP rs3755967 on chromosome 4, position 72,828,262 on their nature paper. I've read their publication several times, including supplementary data, but I didn't see any information concerning the HG version used. After my mail they revised their data and produced a new file, with position 72,609,398
+
+- In my UKB data, this SNP rs3755967 is located at position 72,609,398. As far as I know UKB uses the Hg19 version of Human genome, which is the same as Hg37 if I understood well.
+
+- The dbSNP website tells that rs3755967 position is 71,743,681. It also says it is in the GC gene. It uses the GRCh38 version if I understood well.
+
+- The NCBI platform gives information on the gene GC:
+            - Its position is 71,741,693 to 71,805,520 in HG 3
+            
 
 
 

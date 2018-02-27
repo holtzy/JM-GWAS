@@ -642,7 +642,6 @@ I can use the [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) onlin
 Just put the .linear result of PLINK on it, and specify the SNP of interest.
 It gives me this result:
  
-![snp](IMG/rs12785878_BloodPressure_LocusZoom.png)
 
 
 

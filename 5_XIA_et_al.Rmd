@@ -235,7 +235,8 @@ cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/result_GWAS_VitaminD_XiaEtAl_clumped  .
 ```
 
-The clumping results are not satisfying yet. I've got several loci where I'm suppose to have only one. I do not have anything on chromosome 14 where I have a significant association.
+
+
 
 
 

@@ -38,11 +38,11 @@ library(ggrepel)
 
 
 
-##Manhattan
+##Manhattan {.tabset .tabset-fade .tabset-pills}
 The genetic determinism of Vitamin-D appears to be **oligogenic** with about 6 loci involved. The association on chromosome 4 is very strong, with a -log(p-value) > 300.
 ```{r, warning=F, message=F}
 # Read result
-data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.light.gz", col_names=T, delim=" ")
+data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.gz", col_names=T, delim=" ")
 data$CHR=as.factor(data$CHR)
 #data=data[ sample(seq(1,nrow(data)), 10000) , ]
 
@@ -57,8 +57,8 @@ Hit_SNP <- c(
 Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
 ```
 
+### Classic
 ```{r, fig.width=13, fig.height=6, warning=FALSE }
-
 # -------- Add cumulative position + clumping information to data
 don <- data %>% 
   
@@ -70,7 +70,7 @@ don <- data %>%
   left_join(data, ., by=c("CHR"="CHR")) %>%
   
   # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
-  filter( P<0.03 | SNP %in% sample(data$SNP, 150000)) %>%
+  filter( P<0.1 ) %>%   # | SNP %in% sample(data$SNP, 150000) 
   
   # Add a cumulative position colummn to the data set
   arrange(CHR, BP) %>%
@@ -82,9 +82,8 @@ don <- data %>%
   
 # -------- prepare X axis
 axisdf = don %>% group_by(CHR) %>% summarize(center=( max(BPcum) + min(BPcum) ) / 2 )
-  
 
-# -------- Make the plot
+# -------- Basic plot
 ggplot(don, aes(x=BPcum, y=-log10(P))) +
     
     # Show all points
@@ -97,7 +96,10 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
     geom_label_repel( data=subset(don, is_major=="yes"), aes(label=SNP), size=2.8) +
       
     # Make X axis:
-    scale_x_continuous( label = axisdf$CHR, breaks= axisdf$center ) +
+    scale_x_continuous( label = as.character(axisdf$CHR), breaks= axisdf$center ) +
+  
+    # Signicativity line
+    geom_hline(yintercept = 8, color="orange", size=0.7) +
   
     theme_bw() +
     theme( 
@@ -107,6 +109,48 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
       panel.grid.minor.x = element_blank()
     )
 ```
+
+
+###Cut X-axis and interactive
+In this plot, the SNP involved in the significant associations have been removed. The idea is to focus on putative new association we will find in the UKB.
+```{r, fig.width=10, fig.height=6, warning=FALSE, message=FALSE, fig.cap="Interactive version of the Manhattan plot. Only SNP with -log10(P) >2 & <8 are represented. Hover a point to have information concerning the SNP. Select a specific zone with your mouse to zoom on it. Be patient, there is about 40k points represented.. " }
+
+library(plotly)
+
+don$text <- paste("SNP: ", don$SNP, "\n", "-log10(P-val): ", round(-log10(don$P),2), "\n", "Position: ", don$BP, "\n", "Chromosome: ", don$CHR, "\n", "Beta: ", don$BETA)
+
+p <- don %>% 
+  filter(is_clump=="no") %>%
+  filter( P<0.01 ) %>%   # | SNP %in% sample(data$SNP, 150000) 
+
+  ggplot( aes(x=BPcum, y=-log10(P), text=text)) +
+    
+    # Show all points
+    geom_point( aes(color=as.factor(CHR)), alpha=0.3, size=0.5) +
+    scale_color_manual(values = rep(c("grey", "pink"),44)) +
+    
+    # Make X axis:
+    scale_x_continuous( label = as.character(axisdf$CHR), breaks= axisdf$center ) +
+  
+    # Signicativity line
+    geom_hline(yintercept = 8, color="orange", size=0.7) +
+  
+    theme_bw() +
+    theme( 
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    ) +
+  
+    ylim(0,8)
+
+ggplotly(p, tooltip = "text")
+```
+
+
+
+
 
 
 
@@ -169,7 +213,7 @@ done
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --clump file_chr_{TASK_ID} \
-          --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0 --clump-kb 500 \
+          --clump-p1 0.00000001 --clump-p2 0.01 --clump-r2 0 --clump-kb 1000 \
           --out /home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/GWAS_vitaminD_XiaEtAL_.clump_chr{TASK_ID}"
           
 # Send qsub
@@ -221,10 +265,10 @@ A few thoughts on the FUMA analysis:
 
 - In my UKB data, this SNP rs3755967 is located at position 72,609,398. As far as I know UKB uses the Hg19 version of Human genome, which is the same as Hg37 if I understood well.
 
-- The dbSNP website tells that rs3755967 position is 71,743,681. It also says it is in the GC gene. It uses the GRCh38 version if I understood well.
+- The dbSNP website tells that rs3755967 position is 71,743,681. It also says it is in the GC gene. It uses the GRCh38 version if I understood well.
 
 - The NCBI platform gives information on the gene GC:
-            - Its position is 71,741,693 to 71,805,520 in HG 3
+            - Its position is 71,741,693 to 71,805,520 in HG 3
             
 
 
@@ -238,10 +282,7 @@ A few thoughts on the FUMA analysis:
 
 #- SMR {.tabset }
 ***
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
+<br><br>
 
 ##Method
 The GWAS result suggests an oligogenic control of the VitaminD concentration. Six major loci are described, with several genes present in the corresponding regions. We can run an [SMR analysis](http://cnsgenomics.com/software/smr/#Overview) to go deeper and find out what genes are probably involved in the control of VitaminD.
@@ -316,14 +357,14 @@ wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
 
 # Send smr plot for this loci
 tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_2131381	 --probe-wind 500 --gene-list /home/y.holtz/BLOOD_GWAS/5_SMR/glist-hg18"
-qsubshcom "$tmp_command" 1 30G smr_plot_BloodPressure_loc1 10:00:00 ""
+qsubshcom "$tmp_command" 1 30G smr_plot_vitaminD_loc1 10:00:00 ""
 
-# cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+# transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
 ```
 
-```{r, fig.align="center", fig.width=12, fig.height=9, fig.cap="Figure: SMR Result at the PDE3B locus for VitaminD. Top plot, brown brown dots represent the P values for SNPs from the GWAS analysis of Xia et al.. Diamonds represent the P values for probes from the SMR test. Bottom plot, the eQTL P values of SNPs from the Westra study for the ILMN_2131381 probe tagging PDE3B. The top and the bottom plots include all the SNPs available in the region in the GWAS ad eQTL summary data, respectivly, rather than only the SNPs common o both data sets. Highlighted in red is the gene PDE3B that passed the SMR test but not the HEIDI test."}
+```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9, fig.cap="Figure: SMR Result at the PDE3B locus for VitaminD. Top plot, brown brown dots represent the P values for SNPs from the GWAS analysis of Xia et al.. Diamonds represent the P values for probes from the SMR test. Bottom plot, the eQTL P values of SNPs from the Westra study for the ILMN_2131381 probe tagging PDE3B. The top and the bottom plots include all the SNPs available in the region in the GWAS ad eQTL summary data, respectivly, rather than only the SNPs common o both data sets. Highlighted in red is the gene PDE3B that passed the SMR test but not the HEIDI test."}
 # Make the plot
 source("SCRIPT/plot_SMR.r") 
 # Read the data file in R:
@@ -376,27 +417,24 @@ To run a GSMR analysis we need:
 
 - A risk factor GWAS summary statistics. [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2) recently published a GWAS on Vitamin-D, with a sample size of about 80k people. Let's load this data, and transfer it on the delta cluster. Note that a light version of this file (with p<0.1) is available [here](https://github.com/holtzy/VitaminD-GWAS/tree/master/0_DATA)
 ```{bash, eval=FALSE}
-# First transfert VitaminD data from Inode localy
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/dataset/25Hydro* .
-
-# Then from locally to delta
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp 25Hydro* y.holtz@delta.imb.uq.edu.au://home/y.holtz/VITAMIND_XIA_ET_AL
+# I download the vitamin-D summary statistics from here: https://drive.google.com/drive/folders/0BzYDtCo_doHJRFRKR0ltZHZWZjQ
+# Then from local download folder to delta
+gzip upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt
+scp upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
 
 # good to delta folder
 cd /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
 
 # I miss the frequence of the major allele in this file. I can use the hapmap3 frequencies previously calculated
-cat /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency_1.freq
+cat /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency_1.frq
 
 # --- MA FORMAT --- make the file with this new column, transform it in a format suitable for GSMR.
 echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
-join <(zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt | sort -k 1,1) <(awk '{print $1, $3}' /home/y.holtz/BLOOD_GWAS/1_GWAS/all_frequency*.freq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
+join <(zcat upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | sort -k 1,1) <(awk '{print $2, $6}' /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency*.frq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
 
 # --- LINEAR FORMAT --- make a .linear format suitable for PLINK or FUMA
 echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > GWAS_vitaminD_XiaEtAL.linear
-zcat 25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $13, $1, $12, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
+zcat upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $12, $1, $13, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
 R  # We need to remove the 10^5 format for 100000 format
 data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
 data$BP = round(data$BP, 0)
@@ -415,8 +453,7 @@ cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz .
 
 # Note: I need to delete 2 SNPs that have a P of 0 in the R output. Because R rounds them to 0
-more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}'> for_IGV
-
+more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}' | gzip > GWAS_vitaminD_XiaEtAL.linear_IGV.gz
 ```
 
 
@@ -491,6 +528,9 @@ meaning=read.table("0_DATA/list_diseases_GWAS_sumstat.csv", header=T, sep=",")
 
 # Add the meaning to gsmr result
 gsmr <- gsmr %>% left_join(., meaning, by=c("Outcome"="code") )
+
+# Compute the p-value significancy threshold taking into account multiple testing.
+thres <- 0.05 / nrow(gsmr)
 ```
 
 
@@ -499,9 +539,9 @@ gsmr <- gsmr %>% left_join(., meaning, by=c("Outcome"="code") )
 ##Effect size
 And here is a description of the effect sizes (bxy): the effect of the risk factor on the disease. A few observation:
 
-- `r gsmr %>% filter(p<0.05) %>% nrow()` significant associations (without multiple testing correction tough). 
-- `r gsmr %>% filter(p<0.05 & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
-- `r gsmr %>% filter(p<0.05 & bxy<0) %>% nrow()` have a negative effect size.
+- `r gsmr %>% filter(p<thres) %>% nrow()` significant associations (threshold = 0.05 / number of gsmr test = 0.05/85 = 0.00058). 
+- `r gsmr %>% filter(p<thres & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
+- `r gsmr %>% filter(p<thres & bxy<0) %>% nrow()` have a negative effect size.
 - A lot of the significant causal effects concern blood related trait / disease.
 
 
@@ -510,7 +550,7 @@ gsmr %>%
   arrange(bxy) %>%
   filter(!is.na(bxy) ) %>% 
   mutate(name=factor(name, name)) %>%
-  mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
+  mutate(significance=ifelse(p<thres, "signif", "nonSignif")) %>%
   ggplot( aes(x=name, y=bxy)) +
     geom_hline( yintercept=0 ) +
     geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
@@ -541,7 +581,7 @@ gsmr %>%
   arrange(desc(p)) %>%
   filter( !is.na(bxy)) %>%
   mutate(name=factor(name, name)) %>%
-  mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
+  mutate(significance=ifelse(p<thres, "signif", "nonSignif")) %>%
   ggplot( aes(x=name, y=-log10(p))) +
     geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
     geom_point(aes(color=significance), size=4) +

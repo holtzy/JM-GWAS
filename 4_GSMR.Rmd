@@ -4,50 +4,71 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
+<br><br>
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# A few library
+library(tidyverse)
+library(DT)
 ```
 
->This document applies the [gsmr tool]("http://cnsgenomics.com/software/gsmr/") to our data: is blood pressure causal to one of the 15 diseases?
+>This document applies the [gsmr tool]("http://cnsgenomics.com/software/gsmr/") to our data: is vitamin-D causal to other traits and diseases?
+
+
+
+
 
 
 #- Data
 ***
 To run a GSMR analysis we need:
 
-- A risk factor GWAS summary statistics. This file has been created for diastolic pressure in the GWAS part. I can read it here: `/home/y.holtz/BLOOD_GWAS/1_GWAS/GWAS_blood_pressure.ma`
+- A risk factor GWAS summary statistics. [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2) recently published a GWAS on Vitamin-D, with a sample size of about 80k people. Let's load this data, and transfer it on the delta cluster. Note that a light version of this file (with p<0.1) is available [here](https://github.com/holtzy/VitaminD-GWAS/tree/master/0_DATA)
+```{bash, eval=FALSE}
+# I download the vitamin-D summary statistics from here: https://drive.google.com/drive/folders/0BzYDtCo_doHJRFRKR0ltZHZWZjQ
+# Then from local download folder to delta
+gzip upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt
+scp upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
+
+# good to delta folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
+
+# I miss the frequence of the major allele in this file. I can use the hapmap3 frequencies previously calculated
+cat /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency_1.frq
+
+# --- MA FORMAT --- make the file with this new column, transform it in a format suitable for GSMR.
+echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
+join <(zcat upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | sort -k 1,1) <(awk '{print $2, $6}' /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency*.frq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
+
+# --- LINEAR FORMAT --- make a .linear format suitable for PLINK or FUMA
+echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > GWAS_vitaminD_XiaEtAL.linear
+zcat upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $12, $1, $13, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
+R  # We need to remove the 10^5 format for 100000 format
+data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
+data$BP = round(data$BP, 0)
+options(scipen=500)
+library(dplyr)
+data <- data %>% arrange(CHR, BP)
+write.table(data, file="GWAS_vitaminD_XiaEtAL.linear", quote=F, row.names=FALSE )
+
+# --- LIGHT FORMAT --- make a light version for github
+cat GWAS_vitaminD_XiaEtAL.linear | head -1 >  GWAS_vitaminD_XiaEtAL.linear.light
+cat GWAS_vitaminD_XiaEtAL.linear | awk '{if( $9 < 0.1){print $0}}' >>  GWAS_vitaminD_XiaEtAL.linear.light
+gzip GWAS_vitaminD_XiaEtAL.linear.light
+
+# Transfer locally?
+cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz .
+
+# Note: I need to delete 2 SNPs that have a P of 0 in the R output. Because R rounds them to 0
+more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}' | gzip > GWAS_vitaminD_XiaEtAL.linear_IGV.gz
+```
 
 
 - GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information:
 
     + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
     
-    + 66 other diseases already used in the [GSMR paper by Zhihong et al](https://www.nature.com/articles/s41467-017-02317-2). These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
-    
-    
-```{bash, eval=FALSE}
-# First transfert localy
-cd /Users/y.holtz/Desktop
-scp uqyholtz@inode.qbi.uq.edu.au://ibscratch/users/uqzzhu1/dataset/formatted_meta/* .
-
-# Then from locally to delta
-cd /Users/y.holtz/Desktop
-scp * y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT
-```
-
-I need to reformat these files to respect the GSMR input format:
-```{bash, eval=FALSE}
-cd /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT
-# Put that in a script
-for i in $(ls *gz) ; do
-  echo $i
-  name=$(echo $i | sed 's/.gz//')
-  zcat $i | cut -d" " -f2,4,5,7,8,9,10,11   > $name
-done
-qsubshcom "bash script_clean.sh" 1 20G GSMRrun 10:00:00 ""
-rm *gz
-```
+    + 66 other diseases provided by different publications. These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
 
 
 
@@ -55,15 +76,28 @@ rm *gz
 
 #- Run GSMR
 ***
+The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)
 ```{bash, eval=FALSE}
-# Go to the good folder
-cd /home/y.holtz/BLOOD_GWAS/3_GSMR
+# First transfert localy
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/users/uqzzhu1/code_project/gcta/build/gcta64 .
+
+# Then from locally to delta
+cd /Users/y.holtz/Desktop
+scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin
+```
+
+
+Then I have to prepare a couple of files and run the analysis
+```{bash, eval=FALSE}
+# Specific repo
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR
 
 # Prepare a file that gives the location of every bfile (one per chromosome)
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
 
 # prepare a file that gives the link to the GWAS result for the risk factor
-echo "diastolicBloodPressure /home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT/GWAS_blood_pressure_bolt.ma" > gsmr_exposure.txt
+echo "vitaminD /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma" > gsmr_exposure.txt
 
 # prepare ONE file that list all the outcomes:
 for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/combined*) ; do a=$(echo $i | sed 's/.*gera_//' | sed 's/_1000g.*//') ; echo $a $i ; done > gsmr_outcome.txt
@@ -74,69 +108,125 @@ split -l 1 --numeric-suffixes gsmr_outcome.txt
 for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
 
 # send an array of GSMR
-tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_diastolicBloodPressure_{TASK_ID}"
-qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-89"
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
+qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-88"
 
 # Once it's over, concatenate the results in a unique file
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
 ```
 
-
-
-
-
-#- Results
-***
-First I transfert the result locally for further analysis.
+First I transfer the results locally for further analysis.
 ```{bash, eval=FALSE}
 # Then from locally to delta
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/3_GSMR/gsmr_result_bloodPressure.gsmr .
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_result_vitaminDXiaEtAl.gsmr .
 ```
 
-Read it in R and show it:
+
+
+
+#- Result {.tabset}
+***
+
+Here is how the result of GSMR looks like:  
+
+- The **exposure** is always the Vitamin-D, and we test its causality on several outcomes.   
+- **Bxy** is the effect of the exposure on the disease. If this effect is positive, an increase of the exposure creates a increase in the Outcome.
+- **se** is the standard error around Bxy
+- **p** is the pvalue of the association test. A first approach would be to consider the test significant with a usual 0.05 threshold. However we probably need to correct for multiple testing since we run the test several times.
+- **nsnp** is the number of SNP with a significant effect on the Exposure. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.
+
 ```{r}
-gsmr=read.table("0_DATA/gsmr_result_bloodPressure.gsmr", header = T)
-gsmr
+# Read gsmr result
+gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
+
+# Read the meaning of files:
+meaning=read.table("0_DATA/list_diseases_GWAS_sumstat.csv", header=T, sep=",")
+
+# Add the meaning to gsmr result
+gsmr <- gsmr %>% left_join(., meaning, by=c("Outcome"="code") )
+
+# Compute the p-value significancy threshold taking into account multiple testing.
+thres <- 0.05 / nrow(gsmr)
 ```
 
-A barplot of the pvalues.
-```{r, fig.align="center", message=FALSE, warning=FALSE}
-library(tidyverse)
-gsmr %>% 
-  arrange(desc(p)) %>%
-  mutate(Outcome=factor(Outcome, Outcome)) %>%
-  ggplot( aes(x=Outcome, y=-log10(p))) +
-    geom_segment( aes(x=Outcome, xend=Outcome, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
-    geom_point(size=4, color="orange") +
+
+
+
+##Effect size
+And here is a description of the effect sizes (bxy): the effect of the risk factor on the disease. A few observation:
+
+- `r gsmr %>% filter(p<thres) %>% nrow()` significant associations (threshold = 0.05 / number of gsmr test = 0.05/85 = 0.00058). 
+- `r gsmr %>% filter(p<thres & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
+- `r gsmr %>% filter(p<thres & bxy<0) %>% nrow()` have a negative effect size.
+- A lot of the significant causal effects concern blood related trait / disease.
+
+
+```{r, fig.align="center", fig.height=10, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show significance with a treshold of 0.05 for the p-value. Blue lines show the standard error around the effect size."}
+gsmr %>%
+  arrange(bxy) %>%
+  filter(!is.na(bxy) ) %>% 
+  mutate(name=factor(name, name)) %>%
+  mutate(significance=ifelse(p<thres, "signif", "nonSignif")) %>%
+  ggplot( aes(x=name, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c("grey", "orange")) +
     coord_flip() +
-    theme_light() +
-    theme( panel.grid.major.y = element_blank()) +
-    ylab("-log10( pvalue )") +
+    theme_bw() +
+    theme( panel.grid.major.y = element_line(size=0.1)) +
+    ylab("Bxy (Effect size)") +
     xlab("")
 ```
 
-Have a look to the bxy: the effect of the risk factor on the disease:
 
-```{r, fig.align="center"}
+
+##Table
+The 85 GSMR test results are displayed in this table in case you need to check a specific value:
+
+```{r, message=FALSE, warning=FALSE}
+datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 15) )
+```
+
+
+
+##Pvalues
+Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance. But this does not account for multiple testing.
+```{r, fig.align="center", message=FALSE, warning=FALSE, fig.height=14, fig.width=8}
 gsmr %>% 
   arrange(desc(p)) %>%
-  mutate(Outcome=factor(Outcome, Outcome)) %>%
-  mutate(significance=ifelse(p<0.05, "signif", "nonSignif")) %>%
-  ggplot( aes(x=Outcome, y=bxy)) +
-    geom_hline( yintercept=0 ) +
-    geom_segment( aes(x=Outcome, xend=Outcome, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
+  filter( !is.na(bxy)) %>%
+  mutate(name=factor(name, name)) %>%
+  mutate(significance=ifelse(p<thres, "signif", "nonSignif")) %>%
+  ggplot( aes(x=name, y=-log10(p))) +
+    geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
     scale_color_manual( values=c("grey", "orange")) +
     coord_flip() +
     theme_light() +
     theme( panel.grid.major.y = element_blank()) +
     ylab("-log10( pvalue )") +
-    xlab("")
+    xlab("") 
+```
 
- ```
- 
- 
-Et yo
+
+
+
+
+#- Conclusion
+***
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+- GSMR analysis suggests that vitamin-D concentration has a causal effect on several traits like Hypertension or Alzheimer. This sould be verified using a bigger sample size and multiple testing correction.
+
+
+</div>
+
+
+
 

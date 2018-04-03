@@ -3,149 +3,155 @@ title: "SMR"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
+<br><br>
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-
 # A few library
 library(tidyverse)
 library(DT)
 ```
 
 
->This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the diastolic blood pressure GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `smr` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download).
+>This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the vitamin-D GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `SMR` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download).
 
 
 
-# Data
+
+#Method
 ***
+The GWAS result suggests an oligogenic control of the VitaminD concentration. Six major loci are described, with several genes present in the corresponding regions. We can run an [SMR analysis](http://cnsgenomics.com/software/smr/#Overview) to go deeper and find out what genes are probably involved in the control of VitaminD.
+
 To run SMR several datasets are required:
 
 - **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
-- **gwas-summary**: the summary statistic of the GWAS I've done before. Must be in the 'ma' format. File will be: `/home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma`
-- **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
-- **out**: the output name.
+- **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
+- **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
+
+ 
+<br><br>
+<div align="center">
+![Figure: Association between gene expression and phenotype trough genotypes. (a) A model of causality where a difference in phenotype is caused by a diffference in genotype mediated by gene expression (transcription). (b) Three possible explanations for an observed association between a trait and gene expression through genotypes. From Zhihong Zhu et al.](IMG/smr_explanation.png)
+</div>
+<br><br>
+
+If an association between a gene and VitaminD is detected (figure a), several options exist (figure b): 
+
+- **Causality** or **Pleiotropy**: in this case the Heidi test will be significant
+- **Linkage**: in this case the Heidi test won't be significant.
+
+
+<br><br>
 
 
 
 
 
 
-# Run general SMR
+
+
+#Run SMR
 ***
-
+The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
 ```{bash, eval=FALSE}
 # Good directory
-cd /home/y.holtz/BLOOD_GWAS/5_SMR
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
 
 # Run the analysis
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_BloodPressure_{TASK_ID} --thread-num 1"
-qsubshcom "$tmp_command" 1 30G smr_BloodPressure 10:00:00 "-array=1-22"
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
+qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
 
 # Concatenate chromosome results
-cat smr_BloodPressure_*smr | head -1 > smr_BloodPressure.smr
-cat smr_BloodPressur*smr | grep -v "^probeID" >> smr_BloodPressure.smr
+cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
+cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
 
 # Transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/5_SMR/smr_BloodPressure.smr  .
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
 ```
 
+```{r}
+data=read.table("0_DATA/smr_VitaminDXiaEtAl.smr", header=T)
+```
+The general SMR result provides one line per significant eQTL: **`r nrow(data)` eQTLs** (association between probe and gene expression) are available in the dataset. This concerns `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. What really interests us is the number of significant causal associations that are detected. 
+
+The SMR p-value threshold taking into account multiple testing is 0.05 divided by the number of SMR test. It is thus `r 0.05/nrow(data)`
+```{r}
+thresh <- 0.05 / nrow(data)
+```
+
+The number of signiificant association is `r data %>% filter(p_SMR<thresh) %>% nrow()`
+
+<br>
 
 
 
 
 
-# Results {.tabset .tabset-fade .tabset-pills}
+
+
+
+#Only 1 gene association
 ***
-```{r}
-data=read.table("0_DATA/smr_BloodPressure.smr", header=T)
-```
-The general SMR result provides `r length(unique(data$probeID))` unique probes, `r length(unique(data$Gene))` unique genes and `r length(unique(data$topSNP))` SNPs spread in `r length(unique(data$ProbeChr))` chromosomes. Here an overview of the result
+Only **one causal association** has been detected. The probe ILMN_2131381 (14,84 Mb) that represents the genes PDE3B (full name = [phosphodiesterase 3B](https://www.ncbi.nlm.nih.gov/gene/5140)) as a causal effect on VitaminD (pSMR < 10e-8). The instrument used to determine this association is the snp rs12283049 (14,65 Mb). Here is a zoom on the chromosome 11 around 15Mb where this association takes place.  
 
-```{r, message=FALSE, warning=FALSE}
-datatable(data, rownames = FALSE, options = list(pageLength = 5, scrollX = "(500px") )
-```
+This association is **directly related** with one of the loci detected in the GWAS (snp rs10741657 in the gene CYP2R1 in the same area). It is of interest that the genes PDE3B and CYP2R1 are really close one to each other (See the locus zoom figure above). The gene CYP2R1 is not involved in any eQTL tough. The only other eQTLs available in this region concern the genes COPB1 and INSC, that are not significantly causal for vitaminD.
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
-A few summary statistics on this table:  
-
-## # of Line
-Total number of line in the SMR output: `r nrow(data)`
-```{r}
-data %>%
-  group_by(ProbeChr) %>%
-  count() %>%
-  arrange(n) %>%
-  ungroup() %>%
-  mutate( ProbeChr=factor(ProbeChr, ProbeChr)) %>%
-  ggplot( aes(x=ProbeChr, y=n)) +
-    geom_segment( aes(x=ProbeChr, xend=ProbeChr, y=0, yend=n), color="grey") +
-    geom_point(size=3, color="orange") +
-    coord_flip() +
-    theme_bw() +
-    theme( panel.grid.major.y = element_blank())
-```
-
-## # of signif SMR
-Total number of line in the SMR output with pSMR < 0.000001: `r data %>% filter(p_SMR<0.000001) %>% nrow() `
-```{r}
-data %>%
-  filter(p_SMR<0.000001) %>%
-  group_by(ProbeChr) %>%
-  count() %>%
-  arrange(n) %>%
-  ungroup() %>%
-  mutate( ProbeChr=factor(ProbeChr, ProbeChr)) %>%
-  ggplot( aes(x=ProbeChr, y=n)) +
-    geom_segment( aes(x=ProbeChr, xend=ProbeChr, y=0, yend=n), color="grey") +
-    geom_point(size=3, color="orange") +
-    coord_flip() +
-    theme_bw() +
-    theme( panel.grid.major.y = element_blank())
-```
-
-
-
-
-
-
-
-
-
-
-
-
-# Locus ILMN_1754121
-***
-Get the data for the plot
 ```{bash, eval=FALSE}
 # Good folder
-cd /home/y.holtz/BLOOD_GWAS/5_SMR
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
 
 # Load the position of genes:
 wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
 
 # Send smr plot for this loci
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr15_v2_HM3_QC --gwas-summary /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/GWAS_blood_pressure.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_1754121	 --probe-wind 500 --gene-list /home/y.holtz/BLOOD_GWAS/5_SMR/glist-hg18"
-qsubshcom "$tmp_command" 1 30G smr_plot_BloodPressure_loc1 10:00:00 ""
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_2131381	 --probe-wind 500 --gene-list /home/y.holtz/BLOOD_GWAS/5_SMR/glist-hg18"
+qsubshcom "$tmp_command" 1 30G smr_plot_vitaminD_loc1 10:00:00 ""
 
-# cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+# transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/5_SMR/plot/myplot*  .
+scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
 ```
 
-```{r, fig.align="center", fig.width=12, fig.height=9}
+```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9, fig.cap="Figure: SMR Result at the PDE3B locus for VitaminD. Top plot, brown brown dots represent the P values for SNPs from the GWAS analysis of Xia et al.. Diamonds represent the P values for probes from the SMR test. Bottom plot, the eQTL P values of SNPs from the Westra study for the ILMN_2131381 probe tagging PDE3B. The top and the bottom plots include all the SNPs available in the region in the GWAS ad eQTL summary data, respectivly, rather than only the SNPs common o both data sets. Highlighted in red is the gene PDE3B that passed the SMR test but not the HEIDI test."}
 # Make the plot
 source("SCRIPT/plot_SMR.r") 
 # Read the data file in R:
-SMRData = ReadSMRData("0_DATA/myplot.ILMN_1754121.txt")
+SMRData = ReadSMRData("0_DATA/myplot.ILMN_2131381.txt")
 # Plot the SMR results in a genomic region centred around a probe:
 SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
 ```
+
+```{r, fig.align="center", fig.width=7, fig.height=5}
+SMREffectPlot(data=SMRData, trait_name="VitaminD") 
+```
+
+
+A few details for this causal associations:
+```{r}
+datatable(data %>% filter(p_SMR<0.000001), rownames = FALSE, options = list(pageLength = 5, scrollX=T, dom='t') )
+```
+
+<br><br>
+
+A list of all the result is available here:
+```{r, message=FALSE, warning=FALSE}
+datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
+```
+
+
+
+#- Conclusion
+***
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+
+- Genes GC, NADSYN1 / DHCR7, CYP2R1, CYP24A1, AMDHD1, SEC23A are putative genes under vitamin-D control. However SMR analysis reveals only one gene's association for gene PDE3B. This gene PDE3B is very close from CYP2R1 that is not involved in any eQTL.
+
+
+
+</div>
 
 
 

@@ -63,6 +63,9 @@ scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA
 ```
 
 
+
+
+
 #- Describe blood pressure  {.tabset .tabset-fade .tabset-pills}
 ***
 ```{r}

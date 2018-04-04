@@ -69,6 +69,15 @@ more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}' | gzip > GWAS_v
     + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
     
     + 66 other diseases provided by different publications. These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
+    
+    + 24 diseases from a GWAS on UKBiobank. Provided by Angli and Zhihong Zhu. On Delta here: `/gpfs/gpfs01/polaris/Q0286/uqzzhu1/ukb_summary`
+
+    + GWAS sumstat from Neales Lab?
+
+
+
+We set 2 lists of outcomes. A first list with high prior. A second with all the diseases we can find. List decided by John mainly. Here is the detail of these list.
+
 
 
 

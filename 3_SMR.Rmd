@@ -16,17 +16,11 @@ library(DT)
 
 
 
-#Method
+#- Method
 ***
 The GWAS result suggests an oligogenic control of the VitaminD concentration. Six major loci are described, with several genes present in the corresponding regions. We can run an [SMR analysis](http://cnsgenomics.com/software/smr/#Overview) to go deeper and find out what genes are probably involved in the control of VitaminD.
 
-To run SMR several datasets are required:
 
-- **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
-- **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
-- **beqtl-summary**: eQTL summary data coming from [Westra et al](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`
-
- 
 <br><br>
 <div align="center">
 ![Figure: Association between gene expression and phenotype trough genotypes. (a) A model of causality where a difference in phenotype is caused by a diffference in genotype mediated by gene expression (transcription). (b) Three possible explanations for an observed association between a trait and gene expression through genotypes. From Zhihong Zhu et al.](IMG/smr_explanation.png)
@@ -42,6 +36,21 @@ If an association between a gene and VitaminD is detected (figure a), several op
 <br><br>
 
 
+
+
+
+
+#- Data
+***
+To run SMR several datasets are required:
+
+- **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
+- **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
+- **beqtl-summary**: eQTL summary data. Describes the link between SNPs and gene expression. Several source of information are available:
+
+    - [Westra et al.](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`. This is the first eQTL data I've tried.
+    - [32K eQTLGen cis-eQTL](). Not published yet. Data based on n=32K. Provided via Annique by mail and available on delta here: /shares/compbio/Group-Yang/t.qi/data/eQTLGen/cis-eQTLs-full_formatted.txt_besd-dense`
+    - [GTExV7 Liver](). eQTL dataset based on liver gene expression data. Available on Delta at `/gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver*`
 
 
 

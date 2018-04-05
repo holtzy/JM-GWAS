@@ -1,1 +1,0 @@
-SNP A1 A2 freq b se p n

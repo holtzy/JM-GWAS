@@ -45,11 +45,11 @@ If an association between a gene and VitaminD is detected (figure a), several op
 To run SMR several datasets are required:
 
 - **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
-- **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
+- **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
 - **beqtl-summary**: eQTL summary data. Describes the link between SNPs and gene expression. Several source of information are available:
 
-    - [Westra et al.](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`. This is the first eQTL data I've tried.
-    - [32K eQTLGen cis-eQTL](). Not published yet. Data based on n=32K. Provided via Annique by mail and available on delta here: /shares/compbio/Group-Yang/t.qi/data/eQTLGen/cis-eQTLs-full_formatted.txt_besd-dense`
+    - [Westra et al.](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/shares/compbio/Group-Wray/YanHoltz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA`. This is the first eQTL data I've tried.
+    - [32K eQTLGen cis-eQTL](). Not published yet. Data based on n=32K. Provided via Annique by mail and available on delta here: `/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K`
     - [GTExV7 Liver](). eQTL dataset based on liver gene expression data. Available on Delta at `/gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver*`
 
 
@@ -60,12 +60,14 @@ To run SMR several datasets are required:
 #Run SMR
 ***
 The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
+
+**On Westra et al. eQTL data**
 ```{bash, eval=FALSE}
 # Good directory
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_WESTRA_ET_AL
 
 # Run the analysis
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
 qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
 
 # Concatenate chromosome results
@@ -74,8 +76,53 @@ cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
 
 # Transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
 ```
+
+
+
+**On eQTLGen 32k data**
+```{bash, eval=FALSE}
+# Good directory
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_EQTLGEN_32K
+
+# Run the analysis
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
+qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
+
+# Concatenate chromosome results
+cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
+cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
+```
+
+
+
+**On GTEX Liver data**
+```{bash, eval=FALSE}
+# Good directory
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX_LIVER
+
+# Run the analysis
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
+qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
+
+# Concatenate chromosome results
+cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
+cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/smr_VitaminDXiaEtAl.smr  .
+```
+
+
+
+
+
 
 ```{r}
 data=read.table("0_DATA/smr_VitaminDXiaEtAl.smr", header=T)
@@ -106,18 +153,18 @@ This association is **directly related** with one of the loci detected in the GW
 
 ```{bash, eval=FALSE}
 # Good folder
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR
 
 # Load the position of genes:
 wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
 
 # Send smr plot for this loci
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /home/y.holtz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_2131381	 --probe-wind 500 --gene-list /home/y.holtz/BLOOD_GWAS/5_SMR/glist-hg18"
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /shares/compbio/Group-Wray/YanHoltz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_2131381	 --probe-wind 500 --gene-list /shares/compbio/Group-Wray/YanHoltz/BLOOD_GWAS/5_SMR/glist-hg18"
 qsubshcom "$tmp_command" 1 30G smr_plot_vitaminD_loc1 10:00:00 ""
 
 # transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
 ```
 
 ```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9, fig.cap="Figure: SMR Result at the PDE3B locus for VitaminD. Top plot, brown brown dots represent the P values for SNPs from the GWAS analysis of Xia et al.. Diamonds represent the P values for probes from the SMR test. Bottom plot, the eQTL P values of SNPs from the Westra study for the ILMN_2131381 probe tagging PDE3B. The top and the bottom plots include all the SNPs available in the region in the GWAS ad eQTL summary data, respectivly, rather than only the SNPs common o both data sets. Highlighted in red is the gene PDE3B that passed the SMR test but not the HEIDI test."}

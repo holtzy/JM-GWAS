@@ -3,10 +3,7 @@ title: "Polygenic Risk Score"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
+<br><br>
 
 > This document describes how to compute Polygenic Risk Score (PRS) of the UKB sample. It also describes this PRS, and notably observe its geographical distribution.
 
@@ -15,8 +12,13 @@ knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
 ***
 The idea is to use the effect of each SNP on the Vitamin-D as provided by [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2). In order to do so we need:  
 
-- The GWAS summary statistics of [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2). Available under different format in Delta: `~/DATA/GWAS/XiaEtAl_VitaminD`  
+- The GWAS summary statistics of [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2). Available under different format in Delta: `/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD`  
 - The genotypes of UKB participants: in delta `/afm01/Q0286/UKBiobank/v2EURu_HM3`
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
 
 
 
@@ -25,26 +27,99 @@ The idea is to use the effect of each SNP on the Vitamin-D as provided by [Xia e
 PRS are computed using the `--score` option of [plink version 1.9](https://www.cog-genomics.org/plink2). This work is made twice: first without any correction in the model, second correcting with PCs.
 ```{bash, eval=FALSE}
 # Good folder on delta
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/7_PRS
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS
+
+# Need upper case for Xia et al sumstat, and keep only 3 columns: SNP id, allele, beta.
+more /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.linear | awk '{ print $2,toupper($4),$7 }' | sed '1d' > tmp
 
 # prepare command
-tmp_command="~/bin/plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --score ~/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.linear 2 4 7 header"
+tmp_command="~/bin/plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --score tmp --out output_PRS{TASK_ID}"
 
 # Send command in qsub
 qsubshcom "$tmp_command" 1 30G PRS_plink 10:00:00 "-array=1-22"
 
+# Now I've got one PRS per chromosome.
+# To have my final PRS, I have to multiply these PRS by the number of SNP per chromosome and sum them.
 
+# Compute the number of SNP per chromosome:
+for i in /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC*bim; do mylen=$(wc -l $i) ; mychr=$(echo $i | sed 's/.*chr//' | sed 's/_.*//') ; echo $mychr $mylen ; done > nbr_snp_per_chromosome
 
-
-~/bin/plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr22_v2_HM3_QC --score /home/y.holtz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.linear 2 4 7 header
-
- --> Probleme d'espace disque..
+# In R I prepare my final file
+R
+size <- read.table("nbr_snp_per_chromosome", sep=" ")
+final <- 0
+for(i in seq(1,22)){
+  print(i)
+  chr <- 1
+  data <- read.table(paste("output_PRS", chr, ".profile", sep=""), header=T)
+  data$SCORE <- data$SCORE * size[ which(size$V1 == chr) , 2]
+  final <- final + data$SCORE
+}
+output=data.frame(ID=data$FID, PRS=final)
+write.table(output, file="VitaminD_PRS.txt", row.names=FALSE, quote=FALSE)
 ```
+
+
+
+
+#- Add GPS Coordinate
+I add the GPS coordinate of people and a few other information about them.
+
+On Inode, I read the phenotype file and export the GPS positions:
+```{r, eval=FALSE}
+# good repertory
+ssh uqyholtz@inode.qbi.uq.edu.au
+cd /ibscratch/wrayvisscher/Yan_Holtz/0_DATA 
+
+# Get the good column + repeat the ID + change header to respect plink format
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | awk '{print $1, $8, $144, $145, $146, $147, $148, $149}' > GPS_location.txt
+gzip GPS_location.txt
+
+# Transfer on Delta
+cd ~/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/0_DATA/GPS_location.txt.gz .
+scp GPS_location.txt.gz y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB
+```
+
+Merge both information
+```{r, eval=FALSE}
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS
+R
+PRS <- read.table("VitaminD_PRS.txt", header=T)
+GPS <- read.table("/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/GPS_location.txt.gz", header=T)
+
+# GPS location are distributed in 3 columns. In have to summarize this info in 1 column only.
+GPS$latitude <- GPS$f.129.0.0
+GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.1.0[is.na(GPS$latitude)]
+GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.2.0[is.na(GPS$latitude)]
+GPS$longitude <- GPS$f.129.0.0
+GPS$longitude[is.na(GPS$longitude)] <- GPS$f.129.1.0[is.na(GPS$longitude)]
+GPS$longitude[is.na(GPS$longitude)] <- GPS$f.129.2.0[is.na(GPS$longitude)]
+GPS <- GPS %>% select(f.eid, f.31.0.0, latitude, longitude)
+
+# Merge
+data <- merge(PRS, GPS, by.x="ID", by.y="f.eid", all.x=T) %>% na.omit()
+write.table(data, file="VitaminD_PRS_with_GPS.txt", row.names=FALSE, quote=FALSE)
+gzip VitaminD_PRS_with_GPS.txt
+ 
+# Locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/VitaminD_PRS_with_GPS.txt.gz .
+```
+
+
+
+
 
 
 
 #- Description of PRS
 ***
+Distribution of the PRS:
+```{r}
+
+
+
 
 
 

@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 04 April 2018" />
+<meta name="author" content="by Yan Holtz - 09 April 2018" />
 
 
 <title>Polygenic Risk Score</title>
@@ -236,12 +236,12 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Polygenic Risk Score</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 04 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 09 April 2018</em></h4>
 
 </div>
 
 
-<br><br>
+<p><br><br></p>
 <blockquote>
 <p>This document describes how to compute Polygenic Risk Score (PRS) of the UKB sample. It also describes this PRS, and notably observe its geographical distribution.</p>
 </blockquote>
@@ -250,10 +250,100 @@ $(document).ready(function () {
 <hr />
 <p>The idea is to use the effect of each SNP on the Vitamin-D as provided by <a href="https://www.nature.com/articles/s41467-017-02662-2">Xia et al.</a>. In order to do so we need:</p>
 <ul>
-<li>The GWAS summary statistics of <a href="https://www.nature.com/articles/s41467-017-02662-2">Xia et al.</a>. Available under different format in Delta: <code>~/DATA/GWAS/XiaEtAl_VitaminD</code><br />
+<li>The GWAS summary statistics of <a href="https://www.nature.com/articles/s41467-017-02662-2">Xia et al.</a>. Available under different format in Delta: <code>/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD</code><br />
 </li>
 <li>The genotypes of UKB participants: in delta <code>/afm01/Q0286/UKBiobank/v2EURu_HM3</code></li>
 </ul>
+<pre class="r"><code>library(tidyverse)</code></pre>
+</div>
+<div id="compute-prs" class="section level1">
+<h1><span class="header-section-number">2</span> - Compute PRS</h1>
+<hr />
+<p>PRS are computed using the <code>--score</code> option of <a href="https://www.cog-genomics.org/plink2">plink version 1.9</a>. This work is made twice: first without any correction in the model, second correcting with PCs.</p>
+<pre class="bash"><code># Good folder on delta
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS
+
+# Need upper case for Xia et al sumstat, and keep only 3 columns: SNP id, allele, beta.
+more /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.linear | awk &#39;{ print $2,toupper($4),$7 }&#39; | sed &#39;1d&#39; &gt; tmp
+
+# prepare command
+tmp_command=&quot;~/bin/plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --score tmp --out output_PRS{TASK_ID}&quot;
+
+# Send command in qsub
+qsubshcom &quot;$tmp_command&quot; 1 30G PRS_plink 10:00:00 &quot;-array=1-22&quot;
+
+# Now I&#39;ve got one PRS per chromosome.
+# To have my final PRS, I have to multiply these PRS by the number of SNP per chromosome and sum them.
+
+# Compute the number of SNP per chromosome:
+for i in /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC*bim; do mylen=$(wc -l $i) ; mychr=$(echo $i | sed &#39;s/.*chr//&#39; | sed &#39;s/_.*//&#39;) ; echo $mychr $mylen ; done &gt; nbr_snp_per_chromosome
+
+# In R I prepare my final file
+R
+size &lt;- read.table(&quot;nbr_snp_per_chromosome&quot;, sep=&quot; &quot;)
+final &lt;- 0
+for(i in seq(1,22)){
+  print(i)
+  chr &lt;- 1
+  data &lt;- read.table(paste(&quot;output_PRS&quot;, chr, &quot;.profile&quot;, sep=&quot;&quot;), header=T)
+  data$SCORE &lt;- data$SCORE * size[ which(size$V1 == chr) , 2]
+  final &lt;- final + data$SCORE
+}
+output=data.frame(ID=data$FID, PRS=final)
+write.table(output, file=&quot;VitaminD_PRS.txt&quot;, row.names=FALSE, quote=FALSE)</code></pre>
+</div>
+<div id="add-gps-coordinate" class="section level1">
+<h1><span class="header-section-number">3</span> - Add GPS Coordinate</h1>
+<p>I add the GPS coordinate of people and a few other information about them.</p>
+<p>On Inode, I read the phenotype file and export the GPS positions:</p>
+<pre class="r"><code># good repertory
+ssh uqyholtz@inode.qbi.uq.edu.au
+cd /ibscratch/wrayvisscher/Yan_Holtz/0_DATA 
+
+# Get the good column + repeat the ID + change header to respect plink format
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | awk &#39;{print $1, $8, $144, $145, $146, $147, $148, $149}&#39; &gt; GPS_location.txt
+gzip GPS_location.txt
+
+# Transfer on Delta
+cd ~/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/0_DATA/GPS_location.txt.gz .
+scp GPS_location.txt.gz y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB</code></pre>
+<p>Merge both information</p>
+<pre class="r"><code>cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS
+R
+library(dplyr)
+PRS &lt;- read.table(&quot;VitaminD_PRS.txt&quot;, header=T)
+GPS &lt;- read.table(&quot;/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/GPS_location.txt.gz&quot;, header=T)
+
+# GPS location are distributed in 3 columns. In have to summarize this info in 1 column only.
+GPS$latitude &lt;- GPS$f.129.0.0
+GPS$latitude[is.na(GPS$latitude)] &lt;- GPS$f.129.1.0[is.na(GPS$latitude)]
+GPS$latitude[is.na(GPS$latitude)] &lt;- GPS$f.129.2.0[is.na(GPS$latitude)]
+GPS$longitude &lt;- GPS$f.130.0.0
+GPS$longitude[is.na(GPS$longitude)] &lt;- GPS$f.130.1.0[is.na(GPS$longitude)]
+GPS$longitude[is.na(GPS$longitude)] &lt;- GPS$f.130.2.0[is.na(GPS$longitude)]
+GPS &lt;- GPS %&gt;% select(f.eid, f.31.0.0, latitude, longitude)
+
+# Merge
+data &lt;- merge(PRS, GPS, by.x=&quot;ID&quot;, by.y=&quot;f.eid&quot;, all.x=T) %&gt;% na.omit() %&gt;% select(longitude, latitude, PRS, ID, f.31.0.0)
+write.table(data, file=&quot;VitaminD_PRS_with_GPS.txt&quot;, row.names=FALSE, quote=FALSE)
+gzip VitaminD_PRS_with_GPS.txt
+ 
+# Locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/VitaminD_PRS_with_GPS.txt.gz .</code></pre>
+</div>
+<div id="description-of-prs" class="section level1">
+<h1><span class="header-section-number">4</span> - Description of PRS</h1>
+<hr />
+<p>Distribution of the PRS:</p>
+</div>
+<div id="geographical-distribution-of-prs" class="section level1">
+<h1><span class="header-section-number">5</span> - Geographical Distribution of PRS</h1>
+<hr />
+<p>I used the <a href="https://holtzyan.shinyapps.io/UKB_geo/">UKB geo application</a> to represent the geographical distribution of the PRS. I used the place of birth has a proxy of the position of each UKB study participant.</p>
+<p>There is no organization of the PRS per region.</p>
+<p><img src="IMG/PRS_map1.png" alt="map1" /> <img src="IMG/PRS_map2.png" alt="map2" /></p>
 </div>
 
 &nbsp;

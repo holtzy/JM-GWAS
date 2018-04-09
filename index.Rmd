@@ -4,10 +4,7 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
+<br><br>
 
 
 This document summarizes my work concerning the Vitamin-D GWAS in the UKB. It is composed by several parts:
@@ -19,11 +16,7 @@ This document summarizes my work concerning the Vitamin-D GWAS in the UKB. It is
 * **XIa et al**: GSMR run on their GWAS summary statistics.
 
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
-
+<br><br>
 
 Some of the script described here are run on 2 different clusters:
 

@@ -85,6 +85,7 @@ Merge both information
 ```{r, eval=FALSE}
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS
 R
+library(dplyr)
 PRS <- read.table("VitaminD_PRS.txt", header=T)
 GPS <- read.table("/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/GPS_location.txt.gz", header=T)
 
@@ -92,13 +93,13 @@ GPS <- read.table("/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/GPS_lo
 GPS$latitude <- GPS$f.129.0.0
 GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.1.0[is.na(GPS$latitude)]
 GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.2.0[is.na(GPS$latitude)]
-GPS$longitude <- GPS$f.129.0.0
-GPS$longitude[is.na(GPS$longitude)] <- GPS$f.129.1.0[is.na(GPS$longitude)]
-GPS$longitude[is.na(GPS$longitude)] <- GPS$f.129.2.0[is.na(GPS$longitude)]
+GPS$longitude <- GPS$f.130.0.0
+GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.1.0[is.na(GPS$longitude)]
+GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.2.0[is.na(GPS$longitude)]
 GPS <- GPS %>% select(f.eid, f.31.0.0, latitude, longitude)
 
 # Merge
-data <- merge(PRS, GPS, by.x="ID", by.y="f.eid", all.x=T) %>% na.omit()
+data <- merge(PRS, GPS, by.x="ID", by.y="f.eid", all.x=T) %>% na.omit() %>% select(longitude, latitude, PRS, ID, f.31.0.0)
 write.table(data, file="VitaminD_PRS_with_GPS.txt", row.names=FALSE, quote=FALSE)
 gzip VitaminD_PRS_with_GPS.txt
  
@@ -118,14 +119,19 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 Distribution of the PRS:
 ```{r}
 
-
+```
 
 
 
 
 #- Geographical Distribution of PRS
 ***
+I used the [UKB geo application](https://holtzyan.shinyapps.io/UKB_geo/) to represent the geographical distribution of the PRS. I used the place of birth has a proxy of the position of each UKB study participant.  
 
+There is no organization of the PRS per region.
+
+![map1](IMG/PRS_map1.png)
+![map2](IMG/PRS_map2.png)
 
 
 

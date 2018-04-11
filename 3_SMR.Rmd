@@ -368,6 +368,34 @@ SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000
 
 
 
+# HEIDI test
+***
+Three models are consistent with a significant association from the SMR test using only a single genetic variant. These models are **causality** (Z - > X - > Y), **pleiotropy** (Z ->X and Z ->Y), and **linkage** (Z1->X, Z2->Y, and Z1 and Z2 are in LD). I used the heterogeneity in dependent instruments (**HEIDI**) test proposed by Zhu et al. to detect the linkage situation that is of less biological interest.
+
+What are the association that pass both the SMR test and the HEIDI test?
+
+- Westra
+```{r}
+westra %>% 
+  filter(p_SMR < (0.05 / nrow(westra)) ) %>%
+  filter(p_HEIDI>=0.05)
+```
+
+- eQTLGen: the gene DHCR7 is causal
+```{r}
+eqtlgen %>% 
+  filter(p_SMR < (0.05 / nrow(eqtlgen)) ) %>%
+  filter(p_HEIDI>=0.05)
+```
+
+- GTEX Liver
+```{r}
+gtex %>% 
+  filter(p_SMR < (0.05 / nrow(gtex)) ) %>%
+  filter(p_HEIDI>=0.05)
+```
+
+
 
 
 
@@ -435,7 +463,7 @@ datatable(gtex, rownames = FALSE, filter="top", options = list(pageLength = 5, s
     
     - DHCR7 is involved in cholesterol production. Not much to say about other genes.
 
-
+- The HEIDI test allows to detect the linkage case. After performing this test, only 2 genes remain associated: DHCR7 and SPON1
 
 
 

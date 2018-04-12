@@ -63,6 +63,7 @@ write.table(output, file="VitaminD_PRS.txt", row.names=FALSE, quote=FALSE)
 
 
 #- Add GPS Coordinate
+***
 I add the GPS coordinate of people and a few other information about them.
 
 On Inode, I read the phenotype file and export the GPS positions:
@@ -134,6 +135,68 @@ There is no organization of the PRS per region.
 ![map2](IMG/PRS_map2.png)
 
 
+#- Geographical distribution of the GC gene
+***
+
+First I need to get the allele of the genome wide significant SNPs for all the UK Biobank participants. I've got 6 SNPs to recover as described by Xia et al.
+
+```{r, eval=FALSE}
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_GCgene
+tmp_command="plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr4_v2_HM3_QC --snp rs3755967 --recode --out allele_at_GC" ; qsubshcom "$tmp_command" 1 10G recover_allele 10:00:00 ""
+tmp_command="plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --snp rs12785878 --recode --out allele_at_DHCR7" ; qsubshcom "$tmp_command" 1 10G recover_allele 10:00:00 ""
+
+# Other SNP are not in HAPMAP3
+tmp_command="plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impQC/ukbEURu_imp_chr11_v2_imp_QC --snp rs10741657 --recode --out allele_at_CYP2R1" ; qsubshcom "$tmp_command" 1 10G recover_allele 10:00:00 ""
+tmp_command="plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impQC/ukbEURu_imp_chr20_v2_imp_QC --snp rs17216707 --recode --out allele_at_CYP24A1" ; qsubshcom "$tmp_command" 1 10G recover_allele 10:00:00 ""
+tmp_command="plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impQC/ukbEURu_imp_chr12_v2_imp_QC --snp rs10745742 --recode --out allele_at_AMDHD1" ; qsubshcom "$tmp_command" 1 10G recover_allele 10:00:00 ""
+tmp_command="plink --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_impQC/ukbEURu_imp_chr14_v2_imp_QCC --snp rs8018720 --recode --out allele_at_SEC23A" ; qsubshcom "$tmp_command" 1 10G recover_allele 10:00:00 ""
+```
+
+
+Then I need to merge this file with the localization of people.
+```{r, eval=FALSE}
+R
+library(dplyr)
+PRS <- read.table("allele_at_GC.ped", header=F)
+GPS <- read.table("/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/GPS_location.txt.gz", header=T)
+
+# GPS location are distributed in 3 columns. In have to summarize this info in 1 column only.
+GPS$latitude <- GPS$f.129.0.0
+GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.1.0[is.na(GPS$latitude)]
+GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.2.0[is.na(GPS$latitude)]
+GPS$longitude <- GPS$f.130.0.0
+GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.1.0[is.na(GPS$longitude)]
+GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.2.0[is.na(GPS$longitude)]
+GPS <- GPS %>% select(f.eid, f.31.0.0, latitude, longitude)
+
+# Merge & clean
+data <- merge(PRS, GPS, by.x="V1", by.y="f.eid", all.x=T) %>% 
+  na.omit() %>%
+  mutate(GC_gene=as.factor(paste(V7,V8,sep=""))) %>% 
+  filter(GC_gene!="00") %>% 
+  droplevels() %>% 
+  mutate(GC=as.numeric(GC_gene)) %>% 
+  select(latitude, longitude, GC)
+  
+# Save and zip
+write.table(data, file="VitaminD_PRS_geneGC.txt", row.names=FALSE, quote=FALSE)
+gzip VitaminD_PRS_geneGC.txt
+ 
+# Locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_GCgene/VitaminD_PRS_geneGC.txt.gz .
+```
+
+
+Result:
+<center>
+![](IMG/PRS_GC_gene.png)
+</center>
+
+**TODO**
+
+Same with other genes  
+Score of all genes together  
 
 
 

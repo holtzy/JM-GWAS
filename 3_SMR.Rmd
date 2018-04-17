@@ -76,6 +76,161 @@ A note on the eQTL format:
 
 
 
+#- eQTL Description {.tabset}
+***
+```{r}
+westra <- read.table("0_DATA/smr_VitaminDXiaEtAl_westra.smr", header=T)
+eqtlgen <- read.table("0_DATA/smr_VitaminDXiaEtAl_eQTLGEN.smr", header=T)
+gtex <- read.table("0_DATA/smr_VitaminDXiaEtAl_GTEXLiver.smr", header=T)
+```
+
+
+A summary of what we have in the eQTL data:
+
+- **`r nrow(westra)` eQTLs** (association between probe and gene expression) are available in the Westra westraset. This concerns `r length(unique(westra$probeID))` unique probes, `r length(unique(westra$Gene))` unique genes and `r length(unique(westra$topSNP))` SNPs spread in `r length(unique(westra$ProbeChr))` chromosomes.
+- **`r nrow(eqtlgen)` eQTLs** (association between probe and gene expression) are available in the eqtlgen eqtlgenset. This concerns `r length(unique(eqtlgen$probeID))` unique probes, `r length(unique(eqtlgen$Gene))` unique genes and `r length(unique(eqtlgen$topSNP))` SNPs spread in `r length(unique(eqtlgen$ProbeChr))` chromosomes.
+- **`r nrow(gtex)` eQTLs** (association between probe and gene expression) are available in the gtex gtexset. This concerns `r length(unique(gtex$probeID))` unique probes, `r length(unique(gtex$Gene))` unique genes and `r length(unique(gtex$topSNP))` SNPs spread in `r length(unique(gtex$ProbeChr))` chromosomes.
+
+<br><br>
+Can we have a look to the existing eQTL in the GWAS hit regions?
+
+
+
+
+
+## GC | chr4
+Do we have eQTL in the region of the GC gene? Between 71 and 74 Mb ?
+
+- Westra: an eQTL for the gene RUFY3
+- eQTLGen: 5 eQTL. ENSG00000080493 = SLC4A4 = gene just before GC. But controled by SNP rs12330929 that is NOT in our vitaminD hit area.
+- gtex: nothing
+
+**Conclusion**: we have **NO chance** to detect GC as associated in this SMR analysis.
+
+<br>
+
+Detail westra:
+```{r}
+westra %>% 
+  filter(topSNP_chr==4) %>%
+  filter(topSNP_bp>71000000 & topSNP_bp<74000000)
+```
+
+Detail eQTLGen:
+```{r}
+eqtlgen %>% 
+  filter(topSNP_chr==4) %>%
+  filter(topSNP_bp>71000000 & topSNP_bp<73000000)
+```
+
+Detail gtex:
+```{r}
+gtex %>% 
+  filter(topSNP_chr==4) %>%
+  filter(topSNP_bp>71000000 & topSNP_bp<74000000)
+```
+
+
+
+
+
+## CYP2R1 | chr11 | ~15 Mb
+Do we have eQTL in the region of the CYP2R1 gene? Between 14 and 15.5 Mb ?
+
+- Westra: 3 eQTLs: for COPB1, PDE3B and INSC.
+- eQTLGen: 5 eQTL: for RRAS2, COPB1, PDE3B, **CYP2R1** and INSC. CYP2R1 is our candidate gene since the top hit SNP is in this gene
+- gtex: 1 eQTl: SPON1, but far before our QTL.
+
+**Conclusion**: we have a chance to detect something with SMR.
+
+Detail westra:
+```{r}
+westra %>% 
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>14000000 & topSNP_bp<15500000)
+```
+
+
+Detail eQTLGen:
+```{r}
+eqtlgen %>% 
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>14000000 & topSNP_bp<15500000)
+```
+Note:
+
+- ENSG00000133818 = RRAS2
+- ENSG00000129083 = COPB1
+- ENSG00000152270 = PDE3B
+- ENSG00000186104 = CYP2R1 --> our main target! controled by SNP rs2060793
+- ENSG00000188487 = INSC (Just after the famous CYP2R1)
+
+
+
+Detail gTEX:
+```{r}
+gtex %>% 
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>14000000 & topSNP_bp<15500000)
+```
+
+
+
+
+## NADSYN1 / DHCR7 | chr11 | ~71 Mb
+
+Do we have eQTL in the region of the DHCR7 gene? Between 70 and 72 Mb ?
+
+- Westra: 3 eQTLs: for IL18BP, NUMA1, C11ORF59 but I don't get it cause this genes are not in the LocusZoom figure
+- eQTLGen: 4 eQTL: for DHCR7, AP002387.1, NADSYN1, FAM86C1. Exactly our targets!
+- gtex: 1 eQTl: PPFIA1 and RP11-660L16.2
+
+
+Detail westra:
+```{r}
+westra %>% 
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>70800000 & topSNP_bp<71500000)
+```
+
+
+Detail eQTLGen:
+```{r}
+eqtlgen %>% 
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>70800000 & topSNP_bp<71500000)
+```
+
+ENSG00000172893 = DHCR7
+ENSG00000254682 = AP002387.1
+ENSG00000172890 = NADSYN1
+ENSG00000158483 = FAM86C1
+
+
+Detail GTEX:
+```{r}
+gtex %>% 
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>70000000 & topSNP_bp<73000000)
+```
+
+
+
+
+#- Keep in mind how the chromosome 11 looks like {.tabset}
+***
+
+##Chromosome 11 ~ 15Mb
+![](IMG/VitaminD_XiaEtAl.rs10741657_large.png)
+
+##Chromosome 11 ~ 71Mb
+![](IMG/VitaminD_XiaEtAl.rs12785878.png)
+
+
+
+
+
+
 #- Run SMR
 ***
 The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
@@ -151,17 +306,8 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 
 #- Result overview{.tabset}
 ***
-```{r}
-westra <- read.table("0_DATA/smr_VitaminDXiaEtAl_westra.smr", header=T)
-eqtlgen <- read.table("0_DATA/smr_VitaminDXiaEtAl_eQTLGEN.smr", header=T)
-gtex <- read.table("0_DATA/smr_VitaminDXiaEtAl_GTEXLiver.smr", header=T)
-```
 
-First: a summary of what we have in the eQTL data:
 
-- **`r nrow(westra)` eQTLs** (association between probe and gene expression) are available in the Westra westraset. This concerns `r length(unique(westra$probeID))` unique probes, `r length(unique(westra$Gene))` unique genes and `r length(unique(westra$topSNP))` SNPs spread in `r length(unique(westra$ProbeChr))` chromosomes.
-- **`r nrow(eqtlgen)` eQTLs** (association between probe and gene expression) are available in the eqtlgen eqtlgenset. This concerns `r length(unique(eqtlgen$probeID))` unique probes, `r length(unique(eqtlgen$Gene))` unique genes and `r length(unique(eqtlgen$topSNP))` SNPs spread in `r length(unique(eqtlgen$ProbeChr))` chromosomes.
-- **`r nrow(gtex)` eQTLs** (association between probe and gene expression) are available in the gtex gtexset. This concerns `r length(unique(gtex$probeID))` unique probes, `r length(unique(gtex$Gene))` unique genes and `r length(unique(gtex$topSNP))` SNPs spread in `r length(unique(gtex$ProbeChr))` chromosomes.
 
 For each eQTL association, we run an SMR test. The SMR p-value threshold taking into account multiple testing is 0.05 divided by the number of SMR test. It is thus `r 0.05/nrow(westra)` for Westra.  
 
@@ -170,19 +316,6 @@ The number of signiificant SMR association is :
 - `r westra %>% filter(p_SMR < (0.05 / nrow(westra)) ) %>% nrow()` for westra
 - `r eqtlgen %>% filter(p_SMR < (0.05 / nrow(eqtlgen)) ) %>% nrow()` for eQTLGen
 - `r gtex %>% filter(p_SMR < (0.05 / nrow(gtex)) ) %>% nrow()` for GTEX Liver
-
-Since all the causal association found by SMR take place in the chromosome 11, it is good to remember how the 2 regions of interest look like:
-
-## Chromosome 11 ~ 15Mb
-![](IMG/VitaminD_XiaEtAl.rs10741657.png)
-
-
-## Chromosome 11 ~ 71Mb
-![](IMG/VitaminD_XiaEtAl.rs12785878.png)
-
-
-
-
 
 
 
@@ -394,6 +527,61 @@ gtex %>%
   filter(p_SMR < (0.05 / nrow(gtex)) ) %>%
   filter(p_HEIDI>=0.05)
 ```
+
+
+
+
+
+
+
+
+
+#- Detail of the chromosome 11 ~15Mb {.tabset}
+***
+
+Can we check what happend in the chromosome 11 area without multiple testing correction? Do we find new associations
+
+## Westra
+Only One association already described before
+```{r}
+westra %>% 
+  filter(p_SMR < 0.05) %>%
+  filter(p_SMR > (0.05 / nrow(westra)) ) %>%
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>11000000 & topSNP_bp<19000000)
+```
+
+
+## eQTLGEN
+6 associations are under 0.05 but did not survive multiple testing correction in this area:
+```{r}
+eqtlgen %>% 
+  filter(p_SMR < 0.05) %>%
+  filter(p_SMR > (0.05 / nrow(eqtlgen)) ) %>%
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>11000000 & topSNP_bp<19000000)
+```
+Equivalence: 
+
+-ENSG00000251381 = LINC00958  
+-ENSG00000188487 = INSC (Just after the famous CYP2R1) --- Heidi test OK  
+-ENSG00000166689 = PLEKHA7 --- Heidi test OK  
+-ENSG00000011405 = PIK3C2A --- Heidi test OK  
+-ENSG00000070081 = NUCB2 --- Heidi test OK  
+-ENSG00000260196 = AC124798.1  
+
+
+## GTEX Liver
+Nothing new
+```{r}
+gtex %>% 
+  filter(p_SMR < 0.05) %>%
+  filter(p_SMR > (0.05 / nrow(gtex)) ) %>%
+  filter(topSNP_chr==11) %>%
+  filter(topSNP_bp>11000000 & topSNP_bp<19000000)
+```
+
+
 
 
 

@@ -107,6 +107,7 @@ gzip VitaminD_PRS_with_GPS.txt
 # Locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/VitaminD_PRS_with_GPS.txt.gz .
+
 ```
 
 
@@ -119,7 +120,134 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 ***
 Distribution of the PRS:
 ```{r}
+# Load the file
+data <- read.table("0_DATA/VitaminD_PRS_with_GPS.txt.gz", header=T)
 
+# Distribution?
+data %>%
+  mutate(sex = recode( f.31.0.0, `1`="female", `0`="male") ) %>%
+  ggplot(aes(x=PRS, fill=sex)) +
+      geom_histogram( bins=100) +
+      facet_wrap( ~sex, ncol=1 )
+```
+
+
+
+
+
+#- Relationship with diseases {.tabset}
+***
+
+I build a file with the ICD10 code obsered in UKB people. It uses the field `main ICD10` (field 41202-0.0 to 41202-0.379) and `secondary ICD10`  (field 41204-0.0 to 41204-0.434).
+```{r, eval=FALSE}
+# Work done in October 2017 on Inode
+
+# Make script extract.sh:
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | cut -f1,8,9,22-24,144-146,147-149,4069-4071,4081,4082,4066-4068,3438,3439-3441,5899-5901,5902-5943,6181,6185-6564,6593-7027,7058-7062,26-28,29-31,4075-4077,4081,5896-5898,6008-6010,6179,6180,262-264,361-363,6593-7027 > /ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DATA/UKB_phenos.txt
+
+# Send with Qsub
+qsub -b y -cwd -e tmp -o tmp "/ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/SCRIPTS/extract.sh"
+
+# Zip the result
+gzip /ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DATA/UKB_phenos.txt
+
+# Transfer it locally
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DATA/UKB_phenos.txt.gz .
+
+# Transfert on Delta
+scp UKB_phenos.txt.gz y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB
+```
+
+In this file, I can easily spot people who developped a disease using the ICD10 code of this disease. For example, let's get the ids of people who developped Myeloid, ICD10 code C92*. Only 570 people are concerned..
+```{r, eval=FALSE}
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_DISEASE
+printf "C92\nM313\n" > tocheck
+for i in $(cat tocheck) ; do 
+  echo $i ; 
+  zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | grep $i | cut -f1 > list_$i
+done
+```
+
+And a list of all ids in the UKB:
+```{r, eval=FALSE}
+zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | cut -f1 > list_all
+```
+
+Make a summary file:
+```{r, eval=FALSE}
+# Read files
+all <- read.table("list_all", header=TRUE)
+C92 <- read.table("list_C92", header=FALSE)
+M313 <- read.table("list_M313", header=FALSE)
+
+# Build bilan
+data <- all
+data$C92 <- ifelse(data$f.eid %in% C92$V1, 1, 0)
+data$M313 <- ifelse(data$f.eid %in% M313$V1, 1, 0)
+```
+
+Merge this info with the PRS data
+```{r, eval=FALSE}
+PRS <- read.table("/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_general/VitaminD_PRS_with_GPS.txt.gz", header=TRUE)
+data <- merge(PRS, data, by.x="ID", by.y="f.eid", all.x=TRUE)
+
+# Save file
+write.table(data, file="PRS_with_diseases.txt", quote=FALSE, row.names=FALSE)
+
+# zip it
+gzip PRS_with_diseases.txt
+```
+
+Send this file locally
+```{r, eval=FALSE}
+# Transfer it locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_DISEASE/PRS_with_diseases.txt.gz .
+```
+
+Visualize that:
+```{r}
+data <- read.table("0_DATA/PRS_with_diseases.txt.gz", header=T)
+
+data %>% 
+  select(PRS, C92:M313) %>%
+  gather(disease, value, -1) %>%
+  ggplot( aes(x=as.factor(value), y=PRS, fill=as.factor(value))) +
+    geom_boxplot() +
+    theme(legend.position="none") +
+    facet_wrap(~as.factor(disease))
+```
+
+
+
+Using deciles?
+
+## Myeloid
+```{r}
+data %>%
+    mutate(decile = ntile(PRS, 10)) %>%
+    group_by(decile) %>%
+    summarize(nb=sum(C92)) %>%
+    ggplot( aes(x=decile, y=nb)) +
+      geom_bar(stat="identity", width=0.4, fill="skyblue", alpha=0.9) +
+      scale_x_continuous(breaks=seq(1,10)) +
+      xlab("VitaminD PRS decile") +
+      ylab("Number of people with Myeloid")
+```
+
+
+## Granulomatosis
+```{r}
+data %>%
+    mutate(decile = ntile(PRS, 10)) %>%
+    group_by(decile) %>%
+    summarize(nb=sum(M313)) %>%
+    ggplot( aes(x=decile, y=nb)) +
+      geom_bar(stat="identity", width=0.4, fill="skyblue", alpha=0.9) +
+      scale_x_continuous(breaks=seq(1,10)) +
+      xlab("VitaminD PRS decile") +
+      ylab("Number of people with Granulomatosis")
 ```
 
 

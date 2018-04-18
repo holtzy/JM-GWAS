@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 12 April 2018" />
+<meta name="author" content="by Yan Holtz - 18 April 2018" />
 
 
 <title>Polygenic Risk Score</title>
@@ -236,7 +236,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Polygenic Risk Score</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 12 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 18 April 2018</em></h4>
 
 </div>
 
@@ -338,16 +338,118 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 <h1><span class="header-section-number">4</span> - Description of PRS</h1>
 <hr />
 <p>Distribution of the PRS:</p>
+<pre class="r"><code># Load the file
+data &lt;- read.table(&quot;0_DATA/VitaminD_PRS_with_GPS.txt.gz&quot;, header=T)
+
+# Distribution?
+data %&gt;%
+  mutate(sex = recode( f.31.0.0, `1`=&quot;female&quot;, `0`=&quot;male&quot;) ) %&gt;%
+  ggplot(aes(x=PRS, fill=sex)) +
+      geom_histogram( bins=100) +
+      facet_wrap( ~sex, ncol=1 )</code></pre>
+<p><img src="7_PRS_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="relationship-with-diseases" class="section level1 tabset">
+<h1><span class="header-section-number">5</span> - Relationship with diseases</h1>
+<hr />
+<p>I build a file with the ICD10 code obsered in UKB people. It uses the field <code>main ICD10</code> (field 41202-0.0 to 41202-0.379) and <code>secondary ICD10</code> (field 41204-0.0 to 41204-0.434).</p>
+<pre class="r"><code># Work done in October 2017 on Inode
+
+# Make script extract.sh:
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | cut -f1,8,9,22-24,144-146,147-149,4069-4071,4081,4082,4066-4068,3438,3439-3441,5899-5901,5902-5943,6181,6185-6564,6593-7027,7058-7062,26-28,29-31,4075-4077,4081,5896-5898,6008-6010,6179,6180,262-264,361-363,6593-7027 &gt; /ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DATA/UKB_phenos.txt
+
+# Send with Qsub
+qsub -b y -cwd -e tmp -o tmp &quot;/ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/SCRIPTS/extract.sh&quot;
+
+# Zip the result
+gzip /ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DATA/UKB_phenos.txt
+
+# Transfer it locally
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DATA/UKB_phenos.txt.gz .
+
+# Transfert on Delta
+scp UKB_phenos.txt.gz y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB</code></pre>
+<p>In this file, I can easily spot people who developped a disease using the ICD10 code of this disease. For example, let’s get the ids of people who developped Myeloid, ICD10 code C92*. Only 570 people are concerned..</p>
+<pre class="r"><code>cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_DISEASE
+printf &quot;C92\nM313\n&quot; &gt; tocheck
+for i in $(cat tocheck) ; do 
+  echo $i ; 
+  zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | grep $i | cut -f1 &gt; list_$i
+done</code></pre>
+<p>And a list of all ids in the UKB:</p>
+<pre class="r"><code>zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | cut -f1 &gt; list_all</code></pre>
+<p>Make a summary file:</p>
+<pre class="r"><code># Read files
+all &lt;- read.table(&quot;list_all&quot;, header=TRUE)
+C92 &lt;- read.table(&quot;list_C92&quot;, header=FALSE)
+M313 &lt;- read.table(&quot;list_M313&quot;, header=FALSE)
+
+# Build bilan
+data &lt;- all
+data$C92 &lt;- ifelse(data$f.eid %in% C92$V1, 1, 0)
+data$M313 &lt;- ifelse(data$f.eid %in% M313$V1, 1, 0)</code></pre>
+<p>Merge this info with the PRS data</p>
+<pre class="r"><code>PRS &lt;- read.table(&quot;/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_general/VitaminD_PRS_with_GPS.txt.gz&quot;, header=TRUE)
+data &lt;- merge(PRS, data, by.x=&quot;ID&quot;, by.y=&quot;f.eid&quot;, all.x=TRUE)
+
+# Save file
+write.table(data, file=&quot;PRS_with_diseases.txt&quot;, quote=FALSE, row.names=FALSE)
+
+# zip it
+gzip PRS_with_diseases.txt</code></pre>
+<p>Send this file locally</p>
+<pre class="r"><code># Transfer it locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_DISEASE/PRS_with_diseases.txt.gz .</code></pre>
+<p>Visualize that:</p>
+<pre class="r"><code>data &lt;- read.table(&quot;0_DATA/PRS_with_diseases.txt.gz&quot;, header=T)
+
+data %&gt;% 
+  select(PRS, C92:M313) %&gt;%
+  gather(disease, value, -1) %&gt;%
+  ggplot( aes(x=as.factor(value), y=PRS, fill=as.factor(value))) +
+    geom_boxplot() +
+    theme(legend.position=&quot;none&quot;) +
+    facet_wrap(~as.factor(disease))</code></pre>
+<p><img src="7_PRS_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>Using deciles?</p>
+<div id="myeloid" class="section level2">
+<h2><span class="header-section-number">5.1</span> Myeloid</h2>
+<pre class="r"><code>data %&gt;%
+    mutate(decile = ntile(PRS, 10)) %&gt;%
+    group_by(decile) %&gt;%
+    summarize(nb=sum(C92)) %&gt;%
+    ggplot( aes(x=decile, y=nb)) +
+      geom_bar(stat=&quot;identity&quot;, width=0.4, fill=&quot;skyblue&quot;, alpha=0.9) +
+      scale_x_continuous(breaks=seq(1,10)) +
+      xlab(&quot;VitaminD PRS decile&quot;) +
+      ylab(&quot;Number of people with Myeloid&quot;)</code></pre>
+<p><img src="7_PRS_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+<div id="granulomatosis" class="section level2">
+<h2><span class="header-section-number">5.2</span> Granulomatosis</h2>
+<pre class="r"><code>data %&gt;%
+    mutate(decile = ntile(PRS, 10)) %&gt;%
+    group_by(decile) %&gt;%
+    summarize(nb=sum(M313)) %&gt;%
+    ggplot( aes(x=decile, y=nb)) +
+      geom_bar(stat=&quot;identity&quot;, width=0.4, fill=&quot;skyblue&quot;, alpha=0.9) +
+      scale_x_continuous(breaks=seq(1,10)) +
+      xlab(&quot;VitaminD PRS decile&quot;) +
+      ylab(&quot;Number of people with Granulomatosis&quot;)</code></pre>
+<p><img src="7_PRS_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+</div>
 </div>
 <div id="geographical-distribution-of-prs" class="section level1">
-<h1><span class="header-section-number">5</span> - Geographical Distribution of PRS</h1>
+<h1><span class="header-section-number">6</span> - Geographical Distribution of PRS</h1>
 <hr />
 <p>I used the <a href="https://holtzyan.shinyapps.io/UKB_geo/">UKB geo application</a> to represent the geographical distribution of the PRS. I used the place of birth has a proxy of the position of each UKB study participant.</p>
 <p>There is no organization of the PRS per region.</p>
 <p><img src="IMG/PRS_map1.png" alt="map1" /> <img src="IMG/PRS_map2.png" alt="map2" /></p>
 </div>
 <div id="geographical-distribution-of-the-gc-gene" class="section level1">
-<h1><span class="header-section-number">6</span> - Geographical distribution of the GC gene</h1>
+<h1><span class="header-section-number">7</span> - Geographical distribution of the GC gene</h1>
 <hr />
 <p>First I need to get the allele of the genome wide significant SNPs for all the UK Biobank participants. I’ve got 6 SNPs to recover as described by Xia et al.</p>
 <pre class="r"><code>cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_GCgene

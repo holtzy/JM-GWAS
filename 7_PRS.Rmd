@@ -162,7 +162,7 @@ scp UKB_phenos.txt.gz y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/Yan
 In this file, I can easily spot people who developped a disease using the ICD10 code of this disease. For example, let's get the ids of people who developped Myeloid, ICD10 code C92*. Only 570 people are concerned..
 ```{r, eval=FALSE}
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_DISEASE
-printf "C92\nM313\n" > tocheck
+printf "F00\nG30\nG47\nD50\nF840" > tocheck
 for i in $(cat tocheck) ; do 
   echo $i ; 
   zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | grep $i | cut -f1 > list_$i
@@ -176,15 +176,16 @@ zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | 
 
 Make a summary file:
 ```{r, eval=FALSE}
-# Read files
-all <- read.table("list_all", header=TRUE)
-C92 <- read.table("list_C92", header=FALSE)
-M313 <- read.table("list_M313", header=FALSE)
+# Read all ids
+data <- read.table("list_all", header=TRUE)
 
-# Build bilan
-data <- all
-data$C92 <- ifelse(data$f.eid %in% C92$V1, 1, 0)
-data$M313 <- ifelse(data$f.eid %in% M313$V1, 1, 0)
+# loop
+for( i in c("F00", "G30", "G47", "D50", "F840" ) ){
+  print(i)
+  tmp <- read.table(paste("list_",i,sep=""), header=FALSE)
+  data$new <- ifelse(data$f.eid %in% tmp$V1, 1, 0)
+  colnames(data)[ which(colnames(data)=="new")] = i
+}
 ```
 
 Merge this info with the PRS data
@@ -211,7 +212,7 @@ Visualize that:
 data <- read.table("0_DATA/PRS_with_diseases.txt.gz", header=T)
 
 data %>% 
-  select(PRS, C92:M313) %>%
+  select(PRS, F00:F840) %>%
   gather(disease, value, -1) %>%
   ggplot( aes(x=as.factor(value), y=PRS, fill=as.factor(value))) +
     geom_boxplot() +
@@ -221,34 +222,23 @@ data %>%
 
 
 
-Using deciles?
+Representation using decile: I count the number of people with a disease in each decile of Vitamin-D PRS. Looks like it work for F00 = Dementia in Alzheimer's disease. But it is in the wrong side? If I have more vitamin D (decile is high), then I have more people witht this disease? This is very weird..
 
-## Myeloid
 ```{r}
 data %>%
     mutate(decile = ntile(PRS, 10)) %>%
-    group_by(decile) %>%
-    summarize(nb=sum(C92)) %>%
+    select(decile, F00:F840) %>%
+    gather(disease, value, -1) %>%   
+    group_by(decile, disease) %>%
+    summarize(nb=sum(value)) %>%
     ggplot( aes(x=decile, y=nb)) +
       geom_bar(stat="identity", width=0.4, fill="skyblue", alpha=0.9) +
       scale_x_continuous(breaks=seq(1,10)) +
       xlab("VitaminD PRS decile") +
-      ylab("Number of people with Myeloid")
+      ylab("Number of people with Myeloid") +
+      facet_wrap(~disease, scale="free_y")
 ```
 
-
-## Granulomatosis
-```{r}
-data %>%
-    mutate(decile = ntile(PRS, 10)) %>%
-    group_by(decile) %>%
-    summarize(nb=sum(M313)) %>%
-    ggplot( aes(x=decile, y=nb)) +
-      geom_bar(stat="identity", width=0.4, fill="skyblue", alpha=0.9) +
-      scale_x_continuous(breaks=seq(1,10)) +
-      xlab("VitaminD PRS decile") +
-      ylab("Number of people with Granulomatosis")
-```
 
 
 

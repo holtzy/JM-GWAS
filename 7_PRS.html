@@ -372,7 +372,7 @@ scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/3_UKB_COMO/DA
 scp UKB_phenos.txt.gz y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB</code></pre>
 <p>In this file, I can easily spot people who developped a disease using the ICD10 code of this disease. For example, let’s get the ids of people who developped Myeloid, ICD10 code C92*. Only 570 people are concerned..</p>
 <pre class="r"><code>cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_DISEASE
-printf &quot;C92\nM313\n&quot; &gt; tocheck
+printf &quot;F00\nG30\nG47\nD50\nF840&quot; &gt; tocheck
 for i in $(cat tocheck) ; do 
   echo $i ; 
   zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | grep $i | cut -f1 &gt; list_$i
@@ -380,15 +380,16 @@ done</code></pre>
 <p>And a list of all ids in the UKB:</p>
 <pre class="r"><code>zcat /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_phenos.txt.gz | cut -f1 &gt; list_all</code></pre>
 <p>Make a summary file:</p>
-<pre class="r"><code># Read files
-all &lt;- read.table(&quot;list_all&quot;, header=TRUE)
-C92 &lt;- read.table(&quot;list_C92&quot;, header=FALSE)
-M313 &lt;- read.table(&quot;list_M313&quot;, header=FALSE)
+<pre class="r"><code># Read all ids
+data &lt;- read.table(&quot;list_all&quot;, header=TRUE)
 
-# Build bilan
-data &lt;- all
-data$C92 &lt;- ifelse(data$f.eid %in% C92$V1, 1, 0)
-data$M313 &lt;- ifelse(data$f.eid %in% M313$V1, 1, 0)</code></pre>
+# loop
+for( i in c(&quot;F00&quot;, &quot;G30&quot;, &quot;G47&quot;, &quot;D50&quot;, &quot;F840&quot; ) ){
+  print(i)
+  tmp &lt;- read.table(paste(&quot;list_&quot;,i,sep=&quot;&quot;), header=FALSE)
+  data$new &lt;- ifelse(data$f.eid %in% tmp$V1, 1, 0)
+  colnames(data)[ which(colnames(data)==&quot;new&quot;)] = i
+}</code></pre>
 <p>Merge this info with the PRS data</p>
 <pre class="r"><code>PRS &lt;- read.table(&quot;/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_general/VitaminD_PRS_with_GPS.txt.gz&quot;, header=TRUE)
 data &lt;- merge(PRS, data, by.x=&quot;ID&quot;, by.y=&quot;f.eid&quot;, all.x=TRUE)
@@ -406,40 +407,27 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 <pre class="r"><code>data &lt;- read.table(&quot;0_DATA/PRS_with_diseases.txt.gz&quot;, header=T)
 
 data %&gt;% 
-  select(PRS, C92:M313) %&gt;%
+  select(PRS, F00:F840) %&gt;%
   gather(disease, value, -1) %&gt;%
   ggplot( aes(x=as.factor(value), y=PRS, fill=as.factor(value))) +
     geom_boxplot() +
     theme(legend.position=&quot;none&quot;) +
     facet_wrap(~as.factor(disease))</code></pre>
 <p><img src="7_PRS_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-<p>Using deciles?</p>
-<div id="myeloid" class="section level2">
-<h2><span class="header-section-number">5.1</span> Myeloid</h2>
+<p>Representation using decile: I count the number of people with a disease in each decile of Vitamin-D PRS. Looks like it work for F00 = Dementia in Alzheimer’s disease. But it is in the wrong side? If I have more vitamin D (decile is high), then I have more people witht this disease? This is very weird..</p>
 <pre class="r"><code>data %&gt;%
     mutate(decile = ntile(PRS, 10)) %&gt;%
-    group_by(decile) %&gt;%
-    summarize(nb=sum(C92)) %&gt;%
+    select(decile, F00:F840) %&gt;%
+    gather(disease, value, -1) %&gt;%   
+    group_by(decile, disease) %&gt;%
+    summarize(nb=sum(value)) %&gt;%
     ggplot( aes(x=decile, y=nb)) +
       geom_bar(stat=&quot;identity&quot;, width=0.4, fill=&quot;skyblue&quot;, alpha=0.9) +
       scale_x_continuous(breaks=seq(1,10)) +
       xlab(&quot;VitaminD PRS decile&quot;) +
-      ylab(&quot;Number of people with Myeloid&quot;)</code></pre>
+      ylab(&quot;Number of people with Myeloid&quot;) +
+      facet_wrap(~disease, scale=&quot;free_y&quot;)</code></pre>
 <p><img src="7_PRS_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
-</div>
-<div id="granulomatosis" class="section level2">
-<h2><span class="header-section-number">5.2</span> Granulomatosis</h2>
-<pre class="r"><code>data %&gt;%
-    mutate(decile = ntile(PRS, 10)) %&gt;%
-    group_by(decile) %&gt;%
-    summarize(nb=sum(M313)) %&gt;%
-    ggplot( aes(x=decile, y=nb)) +
-      geom_bar(stat=&quot;identity&quot;, width=0.4, fill=&quot;skyblue&quot;, alpha=0.9) +
-      scale_x_continuous(breaks=seq(1,10)) +
-      xlab(&quot;VitaminD PRS decile&quot;) +
-      ylab(&quot;Number of people with Granulomatosis&quot;)</code></pre>
-<p><img src="7_PRS_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
-</div>
 </div>
 <div id="geographical-distribution-of-prs" class="section level1">
 <h1><span class="header-section-number">6</span> - Geographical Distribution of PRS</h1>

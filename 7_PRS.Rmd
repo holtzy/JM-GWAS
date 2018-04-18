@@ -135,7 +135,7 @@ data %>%
 
 
 
-#- Relationship with diseases {.tabset}
+#- Relationship between PRS and diseases {.tabset}
 ***
 
 I build a file with the ICD10 code obsered in UKB people. It uses the field `main ICD10` (field 41202-0.0 to 41202-0.379) and `secondary ICD10`  (field 41204-0.0 to 41204-0.434).
@@ -238,6 +238,80 @@ data %>%
       ylab("Number of people with Myeloid") +
       facet_wrap(~disease, scale="free_y")
 ```
+
+
+
+
+
+
+
+#- Relationship between PRS and PCs {.tabset}
+***
+
+First of all I need to get the coordinate of each UKB participants on its 10 first PCs. I'm gonna get the PCs in Angli file:
+```{r, eval=FALSE}
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_PC
+cp /gpfs/gpfs01/polaris/Q0286/uqaxue/phen/covar_sex_age_10PCs.txt .
+```
+
+Then I merge my PRS with this PC information
+```{r, eval=FALSE}
+PRS <- read.table("/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_general/VitaminD_PRS_with_GPS.txt.gz", header=TRUE)
+PC <- read.table("covar_sex_age_10PCs.txt", header=T)
+
+# Merge
+data <- merge(PRS, PC, by.x="ID", by.y="FID", all.x=TRUE)
+
+# Save file
+write.table(data, file="PRS_with_PC.txt", quote=FALSE, row.names=FALSE)
+
+# zip it
+gzip PRS_with_PC.txt
+```
+
+Send this file locally
+```{r, eval=FALSE}
+# Transfer it locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_PC/PRS_with_PC.txt.gz .
+```
+
+Check the relationship
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+data <- read.table("0_DATA/PRS_with_PC.txt.gz", header=TRUE)
+
+data %>% head(1000) %>%
+  select(PRS, PC1:PC10) %>%
+  gather(PC, value, -1) %>%
+  ggplot( aes(x=PRS, y=value)) +
+    stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+    scale_fill_distiller(palette= "Spectral", direction=1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme(
+      legend.position='none'
+    ) +
+    facet_wrap( ~PC) +
+    ggtitle("Correlation between VitaminD PRS and the 10 first PCs") +
+    theme_classic()
+```
+
+Check through a Scatterplot
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+data %>% 
+  select(PRS, PC1:PC10) %>%
+  gather(PC, value, -1) %>%
+  ggplot( aes(x=PRS, y=value)) +
+    geom_point(size=0.1, alpha=0.1) +
+    theme(
+      legend.position='none'
+    ) +
+    facet_wrap( ~PC) +
+    ggtitle("Correlation between VitaminD PRS and the 10 first PCs") 
+
+```
+
+Clearly something happening on PCs 1, 2 3, 4, 6
 
 
 

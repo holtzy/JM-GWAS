@@ -349,8 +349,8 @@ data %&gt;%
       facet_wrap( ~sex, ncol=1 )</code></pre>
 <p><img src="7_PRS_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 </div>
-<div id="relationship-with-diseases" class="section level1 tabset">
-<h1><span class="header-section-number">5</span> - Relationship with diseases</h1>
+<div id="relationship-between-prs-and-diseases" class="section level1 tabset">
+<h1><span class="header-section-number">5</span> - Relationship between PRS and diseases</h1>
 <hr />
 <p>I build a file with the ICD10 code obsered in UKB people. It uses the field <code>main ICD10</code> (field 41202-0.0 to 41202-0.379) and <code>secondary ICD10</code> (field 41204-0.0 to 41204-0.434).</p>
 <pre class="r"><code># Work done in October 2017 on Inode
@@ -429,15 +429,69 @@ data %&gt;%
       facet_wrap(~disease, scale=&quot;free_y&quot;)</code></pre>
 <p><img src="7_PRS_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 </div>
+<div id="relationship-between-prs-and-pcs" class="section level1 tabset">
+<h1><span class="header-section-number">6</span> - Relationship between PRS and PCs</h1>
+<hr />
+<p>First of all I need to get the coordinate of each UKB participants on its 10 first PCs. I’m gonna get the PCs in Angli file:</p>
+<pre class="r"><code>cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_PC
+cp /gpfs/gpfs01/polaris/Q0286/uqaxue/phen/covar_sex_age_10PCs.txt .</code></pre>
+<p>Then I merge my PRS with this PC information</p>
+<pre class="r"><code>PRS &lt;- read.table(&quot;/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_general/VitaminD_PRS_with_GPS.txt.gz&quot;, header=TRUE)
+PC &lt;- read.table(&quot;covar_sex_age_10PCs.txt&quot;, header=T)
+
+# Merge
+data &lt;- merge(PRS, PC, by.x=&quot;ID&quot;, by.y=&quot;FID&quot;, all.x=TRUE)
+
+# Save file
+write.table(data, file=&quot;PRS_with_PC.txt&quot;, quote=FALSE, row.names=FALSE)
+
+# zip it
+gzip PRS_with_PC.txt</code></pre>
+<p>Send this file locally</p>
+<pre class="r"><code># Transfer it locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/LINK_PC/PRS_with_PC.txt.gz .</code></pre>
+<p>Check the relationship</p>
+<pre class="r"><code>data &lt;- read.table(&quot;0_DATA/PRS_with_PC.txt.gz&quot;, header=TRUE)
+
+data %&gt;% head(1000) %&gt;%
+  select(PRS, PC1:PC10) %&gt;%
+  gather(PC, value, -1) %&gt;%
+  ggplot( aes(x=PRS, y=value)) +
+    stat_density_2d(aes(fill = ..density..), geom = &quot;raster&quot;, contour = FALSE) +
+    scale_fill_distiller(palette= &quot;Spectral&quot;, direction=1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme(
+      legend.position=&#39;none&#39;
+    ) +
+    facet_wrap( ~PC) +
+    ggtitle(&quot;Correlation between VitaminD PRS and the 10 first PCs&quot;) +
+    theme_classic()</code></pre>
+<p><img src="7_PRS_files/figure-html/unnamed-chunk-17-1.png" width="960" /></p>
+<p>Check through a Scatterplot</p>
+<pre class="r"><code>data %&gt;% 
+  select(PRS, PC1:PC10) %&gt;%
+  gather(PC, value, -1) %&gt;%
+  ggplot( aes(x=PRS, y=value)) +
+    geom_point(size=0.1, alpha=0.1) +
+    theme(
+      legend.position=&#39;none&#39;
+    ) +
+    facet_wrap( ~PC) +
+    ggtitle(&quot;Correlation between VitaminD PRS and the 10 first PCs&quot;) </code></pre>
+<p><img src="7_PRS_files/figure-html/unnamed-chunk-18-1.png" width="960" /></p>
+<p>Clearly something happening on PCs 1, 2 3, 4, 6</p>
+</div>
 <div id="geographical-distribution-of-prs" class="section level1">
-<h1><span class="header-section-number">6</span> - Geographical Distribution of PRS</h1>
+<h1><span class="header-section-number">7</span> - Geographical Distribution of PRS</h1>
 <hr />
 <p>I used the <a href="https://holtzyan.shinyapps.io/UKB_geo/">UKB geo application</a> to represent the geographical distribution of the PRS. I used the place of birth has a proxy of the position of each UKB study participant.</p>
 <p>There is no organization of the PRS per region.</p>
 <p><img src="IMG/PRS_map1.png" alt="map1" /> <img src="IMG/PRS_map2.png" alt="map2" /></p>
 </div>
 <div id="geographical-distribution-of-the-gc-gene" class="section level1">
-<h1><span class="header-section-number">7</span> - Geographical distribution of the GC gene</h1>
+<h1><span class="header-section-number">8</span> - Geographical distribution of the GC gene</h1>
 <hr />
 <p>First I need to get the allele of the genome wide significant SNPs for all the UK Biobank participants. I’ve got 6 SNPs to recover as described by Xia et al.</p>
 <pre class="r"><code>cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/7_PRS/PRS_GCgene

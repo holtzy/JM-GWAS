@@ -64,26 +64,14 @@ more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}' | gzip > GWAS_v
 ```
 
 
-- GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information:
-
-    + 23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online [here](http://cnsgenomics.com/data.html). Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: `ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*`
-    
-    + 66 other diseases provided by different publications. These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: `ibscratch/users/uqzzhu1/dataset/formatted_meta/`
-    
-    + 24 diseases from a GWAS on UKBiobank. Provided by Angli and Zhihong Zhu. On Delta here: `/gpfs/gpfs01/polaris/Q0286/uqzzhu1/ukb_summary`
-
-    + GWAS sumstat from Neales Lab?
-
-
-
-We set 2 lists of outcomes. A first list with high prior. A second with all the diseases we can find. List decided by John mainly. Here is the detail of these list.
+- GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information. All is summarized in the Excel file called `list of traits GSMR`. We set 2 lists of outcomes. A first list with high prior. A second with all the diseases we can find. List decided by John mainly. Here is the detail of these list.
 
 
 
 
 
 
-#- Run GSMR
+#- Run GSMR 
 ***
 The first step is to get the last GCTA version that support GSMR. Available on the QBI cluster in Zhihong folder (thanks!)
 ```{bash, eval=FALSE}
@@ -96,21 +84,21 @@ cd /Users/y.holtz/Desktop
 scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin
 ```
 
-
 Then I have to prepare a couple of files and run the analysis
 ```{bash, eval=FALSE}
 # Specific repo
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
 
-# Prepare a file that gives the location of every bfile (one per chromosome)
+# Prepare a file that gives the location of every b-file (one per chromosome)
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
 
-# prepare a file that gives the link to the GWAS result for the risk factor
-echo "vitaminD /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma" > gsmr_exposure.txt
+# prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D
+echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > gsmr_exposure.txt
 
-# prepare ONE file that list all the outcomes:
-for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/combined*) ; do a=$(echo $i | sed 's/.*gera_//' | sed 's/_1000g.*//') ; echo $a $i ; done > gsmr_outcome.txt
-for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/*txt | grep -v "combined") ; do a=$(echo $i | sed 's/.*SUMSTAT\///' | sed 's/.txt//' ) ; echo $a $i ; done  >> gsmr_outcome.txt
+# prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp list_of_traits_GSMR.xlsx y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
+ more list_of_traits_GSMR.csv | awk 'BEGIN{FS=","}{print $2, "\t", $3"/"$4}' > gsmr_outcome.txt
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
@@ -118,12 +106,16 @@ for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
 
 # send an array of GSMR
 tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
-qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-88"
+qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-71"
 
 # Once it's over, concatenate the results in a unique file
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
 ```
+
+Then I run a reverse GSMR
+
+
 
 First I transfer the results locally for further analysis.
 ```{bash, eval=FALSE}
@@ -131,6 +123,15 @@ First I transfer the results locally for further analysis.
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_result_vitaminDXiaEtAl.gsmr .
 ```
+
+
+
+
+
+
+
+
+
 
 
 

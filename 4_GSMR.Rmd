@@ -135,7 +135,7 @@ split -l 1 --numeric-suffixes gsmr_outcome.txt
 for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
 
 # send an array of GSMR
-tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --gsmr-direction 1 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 1 --out gsmr_reverse_result_vitaminDXiaEtAl_{TASK_ID}"
 qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-72"
 
 # Once it's over, concatenate the results in a unique file

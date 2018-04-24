@@ -11,20 +11,41 @@ library(tidyverse)
 library(DT)
 ```
 
->This document applies the [mtCOJO tool]("http://cnsgenomics.com/software/gcta/#mtCOJO") to our data.
+>This document applies the [mtCOJO tool]("http://cnsgenomics.com/software/gcta/#mtCOJO") to our data. It allows to check if the effect of Vitamin-D on several traits is due to its correlation with other Risk Factors. We thus make a corrected GWAS result of Vitamin D and run GSMR again.
 
 
+The input of mtCOJO are:
+
+- **mbfile**:  individual level genotypes of a reference sample. We will use the Hapmap3 SNPs of the UKB population. This is used for LD estimation.
+- **mtcojo-file**: a list of the GWAS summary data and prevalence of diseases. first row is the target trait. Other rows are covariate.
+- **LD score references**: come from the [LDSC tool](https://github.com/bulik/ldsc).
 
 
-Run mtCOJO
+#- Run mtCOJO
+***
+This script run mtCOJO. The target trait is VitaminD. The related risk factor is height. It gives me as output a new GWAS summary statistics corrected for height.
 ```{r, eval=FALSE}
-gcta64 --mbfile mtcojo_ref_data.txt --mtcojo-file mtcojo_summary_data.list --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out test_mtcojo_result
+# Specific repo
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
 
+# Build mbfile
+ls  /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bed | sed 's/.bed//' > mtcojo_mbfile.txt
+
+# Build mtcojo file
+echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > list_of_trait.txt
+echo "Height /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/height_giant_2014.txt" >> list_of_trait.txt
+
+# Send mCOJO
+tmp_command="gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_result_vitaminD"
+qsubshcom "$tmp_command" 1 30G mtCOJO 10:00:00 ""
 ```
 
 
-Then I have to prepare a couple of files and run the analysis
-```{bash, eval=FALSE}
+
+#- Run GSMR
+***
+I can re run GSMR on this new GWAS summary statistics:
+```{r, eval=FALSE}
 # Specific repo
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
 
@@ -32,19 +53,17 @@ cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
 
 # prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D
-echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > gsmr_exposure.txt
+echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/mtcojo_result_vitaminD" > gsmr_exposure.txt
 
 # prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp list_of_traits_GSMR.csv y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
-more list_of_traits_GSMR.csv | awk 'BEGIN{FS=","}{print $2, "\t", $3"/"$4}' > gsmr_outcome.txt
+cp /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_outcome.txt .
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
 for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
 
 # send an array of GSMR
-tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 1 --out gsmr_reverse_result_vitaminDXiaEtAl_{TASK_ID}"
 qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-72"
 
 # Once it's over, concatenate the results in a unique file
@@ -52,9 +71,6 @@ cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gs
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
 rm *[0-9].gsmr x* *badsnps qsub*
 ```
-
-
-
 
 
 

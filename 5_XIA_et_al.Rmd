@@ -241,7 +241,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/res
 
 
 ##FUMA
-FUMA is a tool for functional mapping and annotation of genetic associations [ref](https://www.nature.com/articles/s41467-017-01261-5). A FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9026). 
+FUMA is a tool for functional mapping and annotation of genetic associations [ref](https://www.nature.com/articles/s41467-017-01261-5). A FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9871). 
 
 - Id: y.holtz@uq.edu.au 
 - Psw: fumayanholtz

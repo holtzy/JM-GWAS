@@ -65,6 +65,14 @@ more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}' | gzip > GWAS_v
 
 
 - GWAS summary statistics for diseases we want to explain. I'm gonna consider several sources of information. All is summarized in the Excel file called `list of traits GSMR`. We set 2 lists of outcomes. A first list with high prior. A second with all the diseases we can find. List decided by John mainly. Here is the detail of these list.
+```{r , eval=FALSE}
+# Reformat Parkinson's Disease data from Constanza. I need to add the allele frequency of each SNP
+ls /shares/compbio/Group-Wray/YanHoltz/DATA/ALLELE_FREQUENCY/*
+cd /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT 
+echo "SNP A1 A2 freq b se p n" > tmp
+join <(cat META_ANALYSIS_10K23_beta_se_correctGC1_pdgene_sharing_280317.tbl | grep -v "^SNP" | sort -k 1,1) <(awk '{print $2, $6}' /shares/compbio/Group-Wray/YanHoltz/DATA/ALLELE_FREQUENCY/* | sort -k 1,1) | awk '{ print $1,$2,$3,$9,$4,$5,$6,100000}' >> tmp
+mv tmp META_ANALYSIS_10K23_beta_se_correctGC1_pdgene_sharing_280317.ma
+```
 
 
 
@@ -97,8 +105,8 @@ echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GW
 
 # prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp list_of_traits_GSMR.xlsx y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
- more list_of_traits_GSMR.csv | awk 'BEGIN{FS=","}{print $2, "\t", $3"/"$4}' > gsmr_outcome.txt
+scp list_of_traits_GSMR.csv y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
+more list_of_traits_GSMR.csv | awk 'BEGIN{FS=","}{print $2, "\t", $3"/"$4}' > gsmr_outcome.txt
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
@@ -106,14 +114,37 @@ for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
 
 # send an array of GSMR
 tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
-qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-71"
+qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-72"
 
 # Once it's over, concatenate the results in a unique file
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
+rm *[0-9].gsmr x* *badsnps qsub*
 ```
 
 Then I run a reverse GSMR
+```{r}
+# Specific repo
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/REVERSE
+
+# copy files done for the forward GSMR
+cp ../gsmr_ref_data.txt ../gsmr_exposure.txt ../gsmr_outcome.txt .
+
+# Split this file: one file per outcome:
+split -l 1 --numeric-suffixes gsmr_outcome.txt 
+for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
+
+# send an array of GSMR
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --gsmr-direction 1 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
+qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-72"
+
+# Once it's over, concatenate the results in a unique file
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
+rm *[0-9].gsmr x* *badsnps qsub*
+
+```
+
 
 
 
@@ -121,7 +152,7 @@ First I transfer the results locally for further analysis.
 ```{bash, eval=FALSE}
 # Then from locally to delta
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_result_vitaminDXiaEtAl.gsmr .
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_result_vitaminDXiaEtAl.gsmr .
 ```
 
 
@@ -136,54 +167,56 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_res
 
 
 
-#- Result {.tabset}
+#- Result: primary traits {.tabset}
 ***
 
-Here is how the result of GSMR looks like:  
+Description of the GSMR result: 
 
 - The **exposure** is always the Vitamin-D, and we test its causality on several outcomes.   
 - **Bxy** is the effect of the exposure on the disease. If this effect is positive, an increase of the exposure creates a increase in the Outcome.
 - **se** is the standard error around Bxy
-- **p** is the pvalue of the association test. A first approach would be to consider the test significant with a usual 0.05 threshold. However we probably need to correct for multiple testing since we run the test several times.
-- **nsnp** is the number of SNP with a significant effect on the Exposure. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.
+- **p** is the pvalue of the association test. We will consider a first threshold of 0.05 for significance, and a second for multiple testing correction (0.05 / # of tests)
+- **nsnp** is the number of SNP with a significant effect on vitamin-D. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.
 
 ```{r}
 # Read gsmr result
 gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
 
 # Read the meaning of files:
-meaning=read.table("0_DATA/list_diseases_GWAS_sumstat.csv", header=T, sep=",")
+meaning=read.table("0_DATA/list_of_traits_GSMR.csv", header=T, sep=",")
+primary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main=="X") ] )
+secondary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main!="X") ] )
 
-# Add the meaning to gsmr result
-gsmr <- gsmr %>% left_join(., meaning, by=c("Outcome"="code") )
-
-# Compute the p-value significancy threshold taking into account multiple testing.
-thres <- 0.05 / nrow(gsmr)
+# Compute thresholds
+thres_primary <- 0.05 / nrow(primary)
+thres_secondary <- 0.05 / nrow(secondary)
 ```
 
 
 
 
 ##Effect size
-And here is a description of the effect sizes (bxy): the effect of the risk factor on the disease. A few observation:
-
-- `r gsmr %>% filter(p<thres) %>% nrow()` significant associations (threshold = 0.05 / number of gsmr test = 0.05/85 = 0.00058). 
-- `r gsmr %>% filter(p<thres & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
-- `r gsmr %>% filter(p<thres & bxy<0) %>% nrow()` have a negative effect size.
-- A lot of the significant causal effects concern blood related trait / disease.
 
 
-```{r, fig.align="center", fig.height=10, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show significance with a treshold of 0.05 for the p-value. Blue lines show the standard error around the effect size."}
-gsmr %>%
+The following chart describes the effect sizes (bxy) of each primary traits: the effect of the risk factor on the disease. A few observation:
+
+- `r primary %>% filter(p<thres_primary) %>% nrow()` significant associations after multiple testing correction. 
+- `r primary %>% filter(p<thres_primary & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
+- `r primary %>% filter(p<thres_primary & bxy<0) %>% nrow()` have a negative effect size.
+
+
+
+```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size."}
+primary %>%
   arrange(bxy) %>%
   filter(!is.na(bxy) ) %>% 
-  mutate(name=factor(name, name)) %>%
-  mutate(significance=ifelse(p<thres, "signif", "nonSignif")) %>%
+  mutate(name=factor(Outcome, unique(Outcome))) %>%
+  mutate(significance=ifelse(p<thres_primary, "signif multi.testing", ifelse(p<0.05, "signif", "nonSignif") ) ) %>%
   ggplot( aes(x=name, y=bxy)) +
     geom_hline( yintercept=0 ) +
     geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
-    scale_color_manual( values=c("grey", "orange")) +
+    scale_color_manual( values=c("grey", "orange", "red")) +
     coord_flip() +
     theme_bw() +
     theme( panel.grid.major.y = element_line(size=0.1)) +
@@ -193,27 +226,23 @@ gsmr %>%
 
 
 
-##Table
-The 85 GSMR test results are displayed in this table in case you need to check a specific value:
 
-```{r, message=FALSE, warning=FALSE}
-datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 15) )
-```
+
 
 
 
 ##Pvalues
 Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance. But this does not account for multiple testing.
-```{r, fig.align="center", message=FALSE, warning=FALSE, fig.height=14, fig.width=8}
-gsmr %>% 
+```{r, fig.align="center", message=FALSE, warning=FALSE, fig.height=7, fig.width=8}
+primary %>% 
   arrange(desc(p)) %>%
   filter( !is.na(bxy)) %>%
-  mutate(name=factor(name, name)) %>%
-  mutate(significance=ifelse(p<thres, "signif", "nonSignif")) %>%
+  mutate(name=factor(Outcome, unique(Outcome))) %>%
+  mutate(significance=ifelse(p<thres_primary, "signif multi.testing", ifelse(p<0.05, "signif", "nonSignif") ) ) %>%
   ggplot( aes(x=name, y=-log10(p))) +
     geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
-    scale_color_manual( values=c("grey", "orange")) +
+    scale_color_manual( values=c("grey", "orange", "red")) +
     coord_flip() +
     theme_light() +
     theme( panel.grid.major.y = element_blank()) +
@@ -223,6 +252,80 @@ gsmr %>%
 
 
 
+
+
+
+
+#- Result: secondary traits {.tabset}
+***
+
+
+##Effect size
+
+A few observation:
+
+- `r secondary %>% filter(p<thres_secondary) %>% nrow()` significant associations after multiple testing correction. 
+- `r secondary %>% filter(p<thres_secondary & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
+- `r secondary %>% filter(p<thres_secondary & bxy<0) %>% nrow()` have a negative effect size.
+
+
+
+```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size."}
+secondary %>%
+  arrange(bxy) %>%
+  filter(!is.na(bxy) ) %>% 
+  mutate(name=factor(Outcome, unique(Outcome))) %>%
+  mutate(significance=ifelse(p<thres_secondary, "signif multi.testing", ifelse(p<0.05, "signif", "nonSignif") ) ) %>%
+  ggplot( aes(x=name, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color="skyblue", alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c("grey", "orange", "red")) +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_line(size=0.1)) +
+    ylab("Bxy (Effect size)") +
+    xlab("")
+```
+
+
+
+
+
+
+
+
+##Pvalues
+Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance. But this does not account for multiple testing.
+```{r, fig.align="center", message=FALSE, warning=FALSE, fig.height=7, fig.width=8}
+secondary %>% 
+  arrange(desc(p)) %>%
+  filter( !is.na(bxy)) %>%
+  mutate(name=factor(Outcome, unique(Outcome))) %>%
+  mutate(significance=ifelse(p<thres_secondary, "signif multi.testing", ifelse(p<0.05, "signif", "nonSignif") ) ) %>%
+  ggplot( aes(x=name, y=-log10(p))) +
+    geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color="skyblue", alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c("grey", "orange", "red")) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab("-log10( pvalue )") +
+    xlab("") 
+```
+
+
+
+
+
+
+#- Table
+***
+The `r nrow(gsmr)` GSMR test results are displayed in this table in case you need to check a specific value:
+
+```{r, message=FALSE, warning=FALSE}
+datatable(gsmr %>% arrange(p), rownames = FALSE, options = list(pageLength = 15) )
+```
 
 
 #- Conclusion

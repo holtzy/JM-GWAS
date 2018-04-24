@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 18 April 2018" />
+<meta name="author" content="by Yan Holtz - 24 April 2018" />
 
 
 <title>GSMR</title>
@@ -26,7 +26,7 @@
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
 <script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
-<script src="site_libs/htmlwidgets-1.1/htmlwidgets.js"></script>
+<script src="site_libs/htmlwidgets-1.2/htmlwidgets.js"></script>
 <script src="site_libs/datatables-binding-0.2/datatables.js"></script>
 <link href="site_libs/dt-core-1.10.12/css/jquery.dataTables.min.css" rel="stylesheet" />
 <link href="site_libs/dt-core-1.10.12/css/jquery.dataTables.extra.css" rel="stylesheet" />
@@ -241,7 +241,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">GSMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 18 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 24 April 2018</em></h4>
 
 </div>
 
@@ -295,15 +295,14 @@ scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vit
 # Note: I need to delete 2 SNPs that have a P of 0 in the R output. Because R rounds them to 0
 more GWAS_vitaminD_XiaEtAL.linear | awk &#39;{ if($9!=0){print $0}}&#39; | gzip &gt; GWAS_vitaminD_XiaEtAL.linear_IGV.gz</code></pre>
 <ul>
-<li><p>GWAS summary statistics for diseases we want to explain. I’m gonna consider several sources of information:</p>
-<ul>
-<li><p>23 diseases comming from a meta-analysis of the UKBiobank and the GERA consortium. Available online <a href="http://cnsgenomics.com/data.html">here</a>. Diseases available are: allergic rhinitis, asthma, cancer ,card depress, dermatophytosis, dia2, dyslipid, hemorrhoids, hernia_abdominopelvic, hyper, insomnia, iron deficiency, irritable bowel, macdegen, ostioa, ostiop, peptic_ulcers, psychiatric, pvd stress, sum diseases, varicose veins). File available here on Inode: <code>ibscratch/users/uqzzhu1/dataset/formatted_meta/combined_ukb_gera*</code></p></li>
-<li><p>66 other diseases provided by different publications. These include Alzheimer, depression, neuroticsm, Schizophrenia, Type II Diabete and others. File available here: <code>ibscratch/users/uqzzhu1/dataset/formatted_meta/</code></p></li>
-<li><p>24 diseases from a GWAS on UKBiobank. Provided by Angli and Zhihong Zhu. On Delta here: <code>/gpfs/gpfs01/polaris/Q0286/uqzzhu1/ukb_summary</code></p></li>
-<li><p>GWAS sumstat from Neales Lab?</p></li>
-</ul></li>
+<li>GWAS summary statistics for diseases we want to explain. I’m gonna consider several sources of information. All is summarized in the Excel file called <code>list of traits GSMR</code>. We set 2 lists of outcomes. A first list with high prior. A second with all the diseases we can find. List decided by John mainly. Here is the detail of these list.</li>
 </ul>
-<p>We set 2 lists of outcomes. A first list with high prior. A second with all the diseases we can find. List decided by John mainly. Here is the detail of these list.</p>
+<pre class="r"><code># Reformat Parkinson&#39;s Disease data from Constanza. I need to add the allele frequency of each SNP
+ls /shares/compbio/Group-Wray/YanHoltz/DATA/ALLELE_FREQUENCY/*
+cd /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT 
+echo &quot;SNP A1 A2 freq b se p n&quot; &gt; tmp
+join &lt;(cat META_ANALYSIS_10K23_beta_se_correctGC1_pdgene_sharing_280317.tbl | grep -v &quot;^SNP&quot; | sort -k 1,1) &lt;(awk &#39;{print $2, $6}&#39; /shares/compbio/Group-Wray/YanHoltz/DATA/ALLELE_FREQUENCY/* | sort -k 1,1) | awk &#39;{ print $1,$2,$3,$9,$4,$5,$6,100000}&#39; &gt;&gt; tmp
+mv tmp META_ANALYSIS_10K23_beta_se_correctGC1_pdgene_sharing_280317.ma</code></pre>
 </div>
 <div id="run-gsmr" class="section level1">
 <h1><span class="header-section-number">2</span> - Run GSMR</h1>
@@ -318,17 +317,18 @@ cd /Users/y.holtz/Desktop
 scp gcta64  y.holtz@delta.imb.uq.edu.au://home/y.holtz/bin</code></pre>
 <p>Then I have to prepare a couple of files and run the analysis</p>
 <pre class="bash"><code># Specific repo
-cd /home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
 
-# Prepare a file that gives the location of every bfile (one per chromosome)
+# Prepare a file that gives the location of every b-file (one per chromosome)
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed &#39;s/.bed//&#39; &gt; gsmr_ref_data.txt
 
-# prepare a file that gives the link to the GWAS result for the risk factor
-echo &quot;vitaminD /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma&quot; &gt; gsmr_exposure.txt
+# prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D
+echo &quot;vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma&quot; &gt; gsmr_exposure.txt
 
-# prepare ONE file that list all the outcomes:
-for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/combined*) ; do a=$(echo $i | sed &#39;s/.*gera_//&#39; | sed &#39;s/_1000g.*//&#39;) ; echo $a $i ; done &gt; gsmr_outcome.txt
-for i in $(ls /shares/compbio/Group-Wray/YanHoltz/GWAS_SUMSTAT/*txt | grep -v &quot;combined&quot;) ; do a=$(echo $i | sed &#39;s/.*SUMSTAT\///&#39; | sed &#39;s/.txt//&#39; ) ; echo $a $i ; done  &gt;&gt; gsmr_outcome.txt
+# prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp list_of_traits_GSMR.csv y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
+more list_of_traits_GSMR.csv | awk &#39;BEGIN{FS=&quot;,&quot;}{print $2, &quot;\t&quot;, $3&quot;/&quot;$4}&#39; &gt; gsmr_outcome.txt
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
@@ -336,89 +336,83 @@ for i in x* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
 
 # send an array of GSMR
 tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}&quot;
-qsubshcom &quot;$tmp_command&quot; 1 30G GSMR_array 10:00:00 &quot;-array=1-88&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G GSMR_array 10:00:00 &quot;-array=1-72&quot;
 
 # Once it&#39;s over, concatenate the results in a unique file
 cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 &gt; gsmr_result_vitaminDXiaEtAl.gsmr
-cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_result_vitaminDXiaEtAl.gsmr</code></pre>
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_result_vitaminDXiaEtAl.gsmr
+rm *[0-9].gsmr x* *badsnps qsub*</code></pre>
+<p>Then I run a reverse GSMR</p>
 <p>First I transfer the results locally for further analysis.</p>
 <pre class="bash"><code># Then from locally to delta
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_result_vitaminDXiaEtAl.gsmr .</code></pre>
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_result_vitaminDXiaEtAl.gsmr .</code></pre>
 </div>
-<div id="result" class="section level1 tabset">
-<h1><span class="header-section-number">3</span> - Result</h1>
+<div id="result-primary-traits" class="section level1 tabset">
+<h1><span class="header-section-number">3</span> - Result: primary traits</h1>
 <hr />
-<p>Here is how the result of GSMR looks like:</p>
+<p>Description of the GSMR result:</p>
 <ul>
 <li>The <strong>exposure</strong> is always the Vitamin-D, and we test its causality on several outcomes.<br />
 </li>
 <li><strong>Bxy</strong> is the effect of the exposure on the disease. If this effect is positive, an increase of the exposure creates a increase in the Outcome.</li>
 <li><strong>se</strong> is the standard error around Bxy</li>
-<li><strong>p</strong> is the pvalue of the association test. A first approach would be to consider the test significant with a usual 0.05 threshold. However we probably need to correct for multiple testing since we run the test several times.</li>
-<li><strong>nsnp</strong> is the number of SNP with a significant effect on the Exposure. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.</li>
+<li><strong>p</strong> is the pvalue of the association test. We will consider a first threshold of 0.05 for significance, and a second for multiple testing correction (0.05 / # of tests)</li>
+<li><strong>nsnp</strong> is the number of SNP with a significant effect on vitamin-D. It is not always the same because a few SNP are sometime discarded by the Heidi outlier test.</li>
 </ul>
 <pre class="r"><code># Read gsmr result
 gsmr=read.table(&quot;0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr&quot;, header = T)
 
 # Read the meaning of files:
-meaning=read.table(&quot;0_DATA/list_diseases_GWAS_sumstat.csv&quot;, header=T, sep=&quot;,&quot;)
+meaning=read.table(&quot;0_DATA/list_of_traits_GSMR.csv&quot;, header=T, sep=&quot;,&quot;)
+primary &lt;- gsmr %&gt;% filter( Outcome %in% meaning$Trait[ which(meaning$Main==&quot;X&quot;) ] )
+secondary &lt;- gsmr %&gt;% filter( Outcome %in% meaning$Trait[ which(meaning$Main!=&quot;X&quot;) ] )
 
-# Add the meaning to gsmr result
-gsmr &lt;- gsmr %&gt;% left_join(., meaning, by=c(&quot;Outcome&quot;=&quot;code&quot;) )
-
-# Compute the p-value significancy threshold taking into account multiple testing.
-thres &lt;- 0.05 / nrow(gsmr)</code></pre>
+# Compute thresholds
+thres_primary &lt;- 0.05 / nrow(primary)
+thres_secondary &lt;- 0.05 / nrow(secondary)</code></pre>
 <div id="effect-size" class="section level2">
 <h2><span class="header-section-number">3.1</span> Effect size</h2>
-<p>And here is a description of the effect sizes (bxy): the effect of the risk factor on the disease. A few observation:</p>
+<p>The following chart describes the effect sizes (bxy) of each primary traits: the effect of the risk factor on the disease. A few observation:</p>
 <ul>
-<li>8 significant associations (threshold = 0.05 / number of gsmr test = 0.05/85 = 0.00058).</li>
-<li>7 of have a positive effect size: more Vitamin-D, more trait.</li>
-<li>1 have a negative effect size.</li>
-<li>A lot of the significant causal effects concern blood related trait / disease.</li>
+<li>2 significant associations after multiple testing correction.</li>
+<li>2 of have a positive effect size: more Vitamin-D, more trait.</li>
+<li>0 have a negative effect size.</li>
 </ul>
-<pre class="r"><code>gsmr %&gt;%
+<pre class="r"><code>primary %&gt;%
   arrange(bxy) %&gt;%
   filter(!is.na(bxy) ) %&gt;% 
-  mutate(name=factor(name, name)) %&gt;%
-  mutate(significance=ifelse(p&lt;thres, &quot;signif&quot;, &quot;nonSignif&quot;)) %&gt;%
+  mutate(name=factor(Outcome, unique(Outcome))) %&gt;%
+  mutate(significance=ifelse(p&lt;thres_primary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
   ggplot( aes(x=name, y=bxy)) +
     geom_hline( yintercept=0 ) +
     geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color=&quot;skyblue&quot;, alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
-    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;)) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;, &quot;red&quot;)) +
     coord_flip() +
     theme_bw() +
     theme( panel.grid.major.y = element_line(size=0.1)) +
     ylab(&quot;Bxy (Effect size)&quot;) +
     xlab(&quot;&quot;)</code></pre>
 <div class="figure" style="text-align: center">
-<img src="4_GSMR_files/figure-html/unnamed-chunk-7-1.png" alt="Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show significance with a treshold of 0.05 for the p-value. Blue lines show the standard error around the effect size." width="768" />
+<img src="4_GSMR_files/figure-html/unnamed-chunk-8-1.png" alt="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size." width="768" />
 <p class="caption">
-Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show significance with a treshold of 0.05 for the p-value. Blue lines show the standard error around the effect size.
+Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size.
 </p>
 </div>
 </div>
-<div id="table" class="section level2">
-<h2><span class="header-section-number">3.2</span> Table</h2>
-<p>The 85 GSMR test results are displayed in this table in case you need to check a specific value:</p>
-<pre class="r"><code>datatable(gsmr %&gt;% arrange(p), rownames = FALSE, options = list(pageLength = 15) )</code></pre>
-<div id="htmlwidget-f78a335d83ab653277e6" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-f78a335d83ab653277e6">{"x":{"filter":"none","data":[["vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD"],["myeloid_wbc_cam_2016","gran_cam_2016","wbc_cam_2016","neut_eo_sum_cam_2016","baso_neut_sum_cam_2016","neut_cam_2016","height_giant_2014","mchc_cam_2016","alzheimers_igap_2013","baso_cam_2016","plt_cam_2016","gran_p_myeloid_wbc_cam_2016","lymph_cam_2016","hdl_glgc_2013","mono_p_cam_2016","pct_cam_2016","neut_p_cam_2016","mono_cam_2016","lymph_p_cam_2016","HYPER","INSOMNIA","eo_baso_sum_cam_2016","mch_cam_2016","MACDEGEN","OSTIOA","IRON_DEFICIENCY","neut_p_gran_cam_2016","sbp_ukb_v1_2016","ret_p_cam_2016","STRESS","eo_p_gran_cam_2016","ret_cam_2016","pdw_cam_2016","eo_cam_2016","iq_ukb_bolt_2017","HERNIA_ABDOMINOPELVIC","bmi_giant_2015","depressive_symptoms_ssgac_2016","uc_iibdgc_2015","PSYCHIATRIC","DEPRESS","cad_cardiogram_2015","hgb_cam_2016","asd_robinson_2015","HEMORRHOIDS","mdd_pgc_mega_2013","hlr_p_cam_2016","rdw_cam_2016","DYSLIPID","hlr_cam_2016","DIA2","PVD","mpv_cam_2016","neuroticism_ssgac_2016","dbp_ukb_v1_2016","iq_vu_2017","scz_pgc_2014","eo_p_cam_2016","PEPTIC_ULCERS","ra_okada_2014","amd_csg_2016","CARD","IRRITABLE_BOWEL","whradjbmi_giant_2015","whr_giant_2015","VARICOSE_VEINS","ASTHMA","cd_iibdgc_2015","bip_pgc_2014","SUM_DISEASES","baso_p_cam_2016","hct_cam_2016","ldl_glgc_2013","icv_enigma_2016","well_being_ssgac_2016","rbc_cam_2016","mcv_cam_2016","baso_p_gran_cam_2016","OSTIOP","eduyears_ssgac_2016","tg_glgc_2013","CANCER","irf_cam_2016","t2d_diagram_2017","well_being_ssgac_2016_pruned"],[0.188634,0.183935,0.184679,0.182419,0.181874,0.1788,0.11996,-0.137556,-0.471287,0.0956538,0.0974073,0.0948427,0.0916145,0.120789,-0.0863913,0.0871263,0.0827215,0.0820581,-0.0769106,0.174548,-0.410881,0.0710939,-0.0695121,0.451325,0.157792,-0.363941,0.0552418,-0.0610669,-0.04918,0.285096,-0.045251,-0.0453709,-0.0433942,0.0430098,0.0382714,0.146085,0.0390816,0.0365254,-0.217529,-0.139598,-0.120643,-0.0903309,-0.0354376,-0.270037,-0.11376,-0.198607,-0.0329934,0.0323647,-0.078836,-0.0320973,-0.119132,0.166394,-0.0281917,0.0261525,-0.0338941,-0.0391354,-0.0753773,-0.0252411,0.166237,-0.106079,0.0855171,0.0548223,0.0986047,0.0137426,0.0127427,-0.0615741,-0.024106,-0.0642234,0.0591033,0.0145178,0.00918309,0.00865116,0.0116192,0.0126072,-0.00393406,0.00387763,-0.00294016,-0.00267772,-0.0133888,-0.00177883,-0.00274909,0.00427858,0.0012178,-0.00308985,null],[0.0383439,0.0382306,0.0386236,0.038167,0.0382156,0.0381451,0.0304114,0.0366427,0.164363,0.0369583,0.0385448,0.0377878,0.0380294,0.0507475,0.0376589,0.0386905,0.0377485,0.0377571,0.0376535,0.0872544,0.21424,0.0376927,0.0373633,0.255748,0.103674,0.245607,0.0388939,0.0467072,0.0378961,0.230119,0.0378029,0.0379479,0.0379387,0.0376307,0.0353065,0.138459,0.0384971,0.0367666,0.219458,0.142993,0.124603,0.0951306,0.03746,0.285764,0.126399,0.222408,0.0378128,0.0373557,0.0913678,0.0378254,0.141191,0.203082,0.0381701,0.0359673,0.047101,0.054881,0.10909,0.0376086,0.270175,0.182646,0.158345,0.103689,0.192739,0.0437958,0.0435398,0.214124,0.0875665,0.238288,0.221769,0.0546114,0.036654,0.0372754,0.0556041,0.0897973,0.0296117,0.0375836,0.0372534,0.0369845,0.190097,0.0279101,0.0493619,0.104364,0.0374413,0.126575,null],[8.67511e-07,1.50021e-06,1.73982e-06,1.75738e-06,1.94412e-06,2.76738e-06,7.99435e-05,0.000174039,0.00413909,0.00964912,0.0115003,0.0120774,0.0159943,0.0173034,0.0217878,0.0243299,0.0284238,0.0297567,0.0410929,0.0454511,0.0551293,0.0592753,0.0628236,0.0776103,0.128008,0.138392,0.155515,0.191063,0.19437,0.215381,0.231297,0.231848,0.252708,0.253061,0.278375,0.29139,0.310018,0.320495,0.321583,0.328935,0.332932,0.342343,0.344142,0.344677,0.368113,0.371865,0.382911,0.386276,0.388224,0.396124,0.3988,0.41259,0.460161,0.467153,0.471768,0.475786,0.489589,0.502123,0.538362,0.561381,0.58915,0.597001,0.608934,0.753682,0.769776,0.773681,0.783095,0.787529,0.789848,0.790363,0.802174,0.81647,0.834478,0.888347,0.894308,0.917825,0.937094,0.942283,0.94385,0.949182,0.955587,0.967298,0.974053,0.980525,null],[17,17,16,17,17,17,15,17,17,17,17,17,17,16,17,17,17,16,17,16,17,17,17,17,17,17,16,17,17,17,17,17,17,17,17,17,17,16,17,17,17,17,17,17,17,17,17,17,17,17,16,17,17,14,15,17,17,17,17,17,16,17,17,17,17,17,17,16,16,17,17,17,16,17,16,17,17,17,17,17,16,17,17,17,null],["Myeloid (wbc)","Granulomatosis","White blood cell disorder","Neutrophil (2)","Basopenia (2)","Neutrophil","Height","Mean Corpuscular Hemoglobin (2)","Alzheimers","Basopenia (1)","Platelet Disorder","Myeloid","Lymph disease","HDL Cholesterol","MONO- (2)","Porphyria cutanea tarda","Neutrophil (3)","MONO-","Lymph disease (2)","Hypertensive disease","Insomnia","Eosinophilic esophagitis","Mean Corpuscular Hemoglobin","Macular degeneration","Osteoarthritis","Iron deficiency","NEUT- (4)","Systolic Blood Pressure","Rett disease (2)","Stress","Eosinophilic esophagitis (4)","Rett disease","Platelet ditribution width","Eosinophilic esophagitis (2)","IQ (UKB)","Hernia Abdominopelvic cavity","BMI","Depressive Symptoms","Ulcerative colitis","Psychiatric","Depressive disorder","Cardiovascular disease","Hemoglobin disease","Autism","Hemorrhoids","Motor Neuron Disease (MDD)","HLR (2)","Red cell distribution width","Dyslipidemia","HLR","Type 2 Diabete (2)","Peripheral Vacsular Disease","Mean platelet volume ","Neuroticism","Diastolic Blood Pressure","IQ (VU)","Schizophrenia","Eosinophilic esophagitis (3)","Peptic ulcer","Rheumatoid arthritis","Aged Macular Degeneration","CARD-","Irritable bowel syndrome","BMI (giant)","Waist hip ratio","Varicose veins","Asthma","Cardiovascular disease (2)","BIP-","Sum of diseases","Basopenia (3)","Hematocrit","LDL Cholesterol","ICV","Well being","disease of Red blood cell","Mean corpuscular volume","Basopenia (4)","Osteoporosis","Years of education","Triglycerides","Cancer","IRF-","Type 2 Diabete","Well being (pruned)"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>Exposure<\/th>\n      <th>Outcome<\/th>\n      <th>bxy<\/th>\n      <th>se<\/th>\n      <th>p<\/th>\n      <th>nsnp<\/th>\n      <th>name<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]},"selection":{"mode":"multiple","selected":null,"target":"row"}},"evals":[],"jsHooks":[]}</script>
-</div>
 <div id="pvalues" class="section level2">
-<h2><span class="header-section-number">3.3</span> Pvalues</h2>
+<h2><span class="header-section-number">3.2</span> Pvalues</h2>
 <p>Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance. But this does not account for multiple testing.</p>
-<pre class="r"><code>gsmr %&gt;% 
+<pre class="r"><code>primary %&gt;% 
   arrange(desc(p)) %&gt;%
   filter( !is.na(bxy)) %&gt;%
-  mutate(name=factor(name, name)) %&gt;%
-  mutate(significance=ifelse(p&lt;thres, &quot;signif&quot;, &quot;nonSignif&quot;)) %&gt;%
+  mutate(name=factor(Outcome, unique(Outcome))) %&gt;%
+  mutate(significance=ifelse(p&lt;thres_primary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
   ggplot( aes(x=name, y=-log10(p))) +
     geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color=&quot;skyblue&quot;, alpha=0.7) +
     geom_point(aes(color=significance), size=4) +
-    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;)) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;, &quot;red&quot;)) +
     coord_flip() +
     theme_light() +
     theme( panel.grid.major.y = element_blank()) +
@@ -427,8 +421,69 @@ Figure: effect size (Bxy) of Vitamin D on 84 traits. Grey / orange points show s
 <p><img src="4_GSMR_files/figure-html/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" /></p>
 </div>
 </div>
+<div id="result-secondary-traits" class="section level1 tabset">
+<h1><span class="header-section-number">4</span> - Result: secondary traits</h1>
+<hr />
+<div id="effect-size-1" class="section level2">
+<h2><span class="header-section-number">4.1</span> Effect size</h2>
+<p>A few observation:</p>
+<ul>
+<li>3 significant associations after multiple testing correction.</li>
+<li>3 of have a positive effect size: more Vitamin-D, more trait.</li>
+<li>0 have a negative effect size.</li>
+</ul>
+<pre class="r"><code>secondary %&gt;%
+  arrange(bxy) %&gt;%
+  filter(!is.na(bxy) ) %&gt;% 
+  mutate(name=factor(Outcome, unique(Outcome))) %&gt;%
+  mutate(significance=ifelse(p&lt;thres_secondary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
+  ggplot( aes(x=name, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;, &quot;red&quot;)) +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_line(size=0.1)) +
+    ylab(&quot;Bxy (Effect size)&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<div class="figure" style="text-align: center">
+<img src="4_GSMR_files/figure-html/unnamed-chunk-10-1.png" alt="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size." width="768" />
+<p class="caption">
+Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size.
+</p>
+</div>
+</div>
+<div id="pvalues-1" class="section level2">
+<h2><span class="header-section-number">4.2</span> Pvalues</h2>
+<p>Here is an ordered barplot of the pvalues. We have several traits over the 0.05 threshold of significance. But this does not account for multiple testing.</p>
+<pre class="r"><code>secondary %&gt;% 
+  arrange(desc(p)) %&gt;%
+  filter( !is.na(bxy)) %&gt;%
+  mutate(name=factor(Outcome, unique(Outcome))) %&gt;%
+  mutate(significance=ifelse(p&lt;thres_secondary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
+  ggplot( aes(x=name, y=-log10(p))) +
+    geom_segment( aes(x=name, xend=name, y=-log10(p), yend=0), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;, &quot;red&quot;)) +
+    coord_flip() +
+    theme_light() +
+    theme( panel.grid.major.y = element_blank()) +
+    ylab(&quot;-log10( pvalue )&quot;) +
+    xlab(&quot;&quot;) </code></pre>
+<p><img src="4_GSMR_files/figure-html/unnamed-chunk-11-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="table" class="section level1">
+<h1><span class="header-section-number">5</span> - Table</h1>
+<hr />
+<p>The 71 GSMR test results are displayed in this table in case you need to check a specific value:</p>
+<pre class="r"><code>datatable(gsmr %&gt;% arrange(p), rownames = FALSE, options = list(pageLength = 15) )</code></pre>
+<div id="htmlwidget-597f73b92374a4874161" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-597f73b92374a4874161">{"x":{"filter":"none","data":[["vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD"],["Myeloid","Granulocytecount","Whitebloodcellcount","Neutrophil(x4)","Height","Alzheimer'sDisease","Basophilcount","PlateletCount","Lymphocytecount","HDLcholesterol","allergicrhinitis","Plateletcrit","Monocytecount","Dementia-Alzheimer","hypertensivedisease","insomnia","MeanCorpuscularHemoglobin","maculardegeneration","osteoarthritis","irondeficiencyanemias","systolicbloodpressure","acutereactiontostress","Reticulocytecount","Plateletditributionwidth","Eosinophilicesophagitis","IQ(UKB)","herniaabdominopelviccavity","BMI","DepressiveSymptoms","UlcerativeColitis","psychiatricdisorder","majordepressivedisorder","CAD","Hemoglobin","AutismSpectrumDisorder","dermatophytosis","hemorrhoids","MajorDepressiveDisorder","Redcelldistributionwidth","dyslipidemia","typeIIdiabetes","peripheralvasculardisease","Meanplateletvolume","Neuroticism","diastolicbloodpressure","IQ","Schizophrenia","pepticulcers","RheumatoidArthritis","Parkinson","AgedMacularDegeneration","cardiovasculardisease","irritablebowelsyndrome","Waist-to-hipratioadjustedforBMI","varicoseveinsoflowerextremities","asthma","Crohn'sDisease","BipolarDisorder","diseasecount","Hematocrit","LDLcholesterol","ICV","Wellbeing(x2)","Redbloodcellcount","Meancorpuscularvolume","osteoporosis","EduYear","triglycerides","cancer","ImmatureFractionofReticulocytes","typeIIdiabetes"],[0.188634,0.183935,0.184679,0.1788,0.11996,-0.471287,0.0956538,0.0974073,0.0916145,0.120789,0.273004,0.0871263,0.0820581,-0.156573,0.174548,-0.410881,-0.0695121,0.451325,0.157792,-0.363941,-0.0610669,0.285096,-0.0453709,-0.0433942,0.0430098,0.0382714,0.146085,0.0390816,0.0365254,-0.217529,-0.139598,-0.120643,-0.0903309,-0.0354376,-0.270037,0.172684,-0.11376,-0.198607,0.0323647,-0.078836,-0.119132,0.166394,-0.0281917,0.0262072,-0.0338941,-0.0391354,-0.0753773,0.166237,-0.106079,-0.127228,0.0855171,0.0548223,0.0986047,0.0137426,-0.0615741,-0.024106,-0.0642234,0.0591033,0.0145178,0.00865116,0.0116192,0.0126072,-0.00393406,0.00387763,-0.00294016,-0.0133888,-0.00177883,-0.00274909,0.00427858,0.0012178,-0.00308985],[0.0383439,0.0382306,0.0386236,0.0381451,0.0304114,0.164363,0.0369583,0.0385448,0.0380294,0.0507475,0.116511,0.0386905,0.0377571,0.0732505,0.0872544,0.21424,0.0373633,0.255748,0.103674,0.245607,0.0467072,0.230119,0.0379479,0.0379387,0.0376307,0.0353065,0.138459,0.0384971,0.0367666,0.219458,0.142993,0.124603,0.0951306,0.03746,0.285764,0.185889,0.126399,0.222408,0.0373557,0.0913678,0.141191,0.203082,0.0381701,0.0358304,0.047101,0.054881,0.10909,0.270175,0.182646,0.219072,0.158345,0.103689,0.192739,0.0437958,0.214124,0.0875665,0.238288,0.221769,0.0546114,0.0372754,0.0556041,0.0897973,0.0296117,0.0375836,0.0372534,0.190097,0.0279101,0.0493619,0.104364,0.0374413,0.126575],[8.67511e-07,1.50021e-06,1.73982e-06,2.76738e-06,7.99435e-05,0.00413909,0.00964912,0.0115003,0.0159943,0.0173034,0.0191215,0.0243299,0.0297567,0.0325573,0.0454511,0.0551293,0.0628236,0.0776103,0.128008,0.138392,0.191063,0.215381,0.231848,0.252708,0.253061,0.278375,0.29139,0.310018,0.320495,0.321583,0.328935,0.332932,0.342343,0.344142,0.344677,0.35291,0.368113,0.371865,0.386276,0.388224,0.3988,0.41259,0.460161,0.464521,0.471768,0.475786,0.489589,0.538362,0.561381,0.561404,0.58915,0.597001,0.608934,0.753682,0.773681,0.783095,0.787529,0.789848,0.790363,0.81647,0.834478,0.888347,0.894308,0.917825,0.937094,0.94385,0.949182,0.955587,0.967298,0.974053,0.980525],[17,17,16,17,15,17,17,17,17,16,17,17,16,17,16,17,17,17,17,17,17,17,17,17,17,17,17,17,16,17,17,17,17,17,17,17,17,17,17,17,16,17,17,14,15,17,17,17,17,17,16,17,17,17,17,17,16,16,17,17,16,17,16,17,17,17,17,16,17,17,17]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>Exposure<\/th>\n      <th>Outcome<\/th>\n      <th>bxy<\/th>\n      <th>se<\/th>\n      <th>p<\/th>\n      <th>nsnp<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+</div>
 <div id="conclusion" class="section level1">
-<h1><span class="header-section-number">4</span> - Conclusion</h1>
+<h1><span class="header-section-number">6</span> - Conclusion</h1>
 <hr />
 <style>
 div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}

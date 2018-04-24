@@ -69,3 +69,4 @@ X,DepressiveSymptoms,/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT,
 X,Neuroticism,/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT,neuroticism_ssgac_2016.txt
 ,Wellbeing(x2),/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT,well_being_ssgac_2016.txt
 X,Dementia-Alzheimer,/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT,AD_meta2.smy
+X,Parkinson,/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT,META_ANALYSIS_10K23_beta_se_correctGC1_pdgene_sharing_280317.ma

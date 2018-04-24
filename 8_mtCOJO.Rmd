@@ -1,0 +1,60 @@
+---
+title: "mtCOJO"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+<br><br>
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# A few library
+library(tidyverse)
+library(DT)
+```
+
+>This document applies the [mtCOJO tool]("http://cnsgenomics.com/software/gcta/#mtCOJO") to our data.
+
+
+
+
+Run mtCOJO
+```{r, eval=FALSE}
+gcta64 --mbfile mtcojo_ref_data.txt --mtcojo-file mtcojo_summary_data.list --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out test_mtcojo_result
+
+```
+
+
+Then I have to prepare a couple of files and run the analysis
+```{bash, eval=FALSE}
+# Specific repo
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
+
+# Prepare a file that gives the location of every b-file (one per chromosome)
+ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
+
+# prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D
+echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > gsmr_exposure.txt
+
+# prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp list_of_traits_GSMR.csv y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
+more list_of_traits_GSMR.csv | awk 'BEGIN{FS=","}{print $2, "\t", $3"/"$4}' > gsmr_outcome.txt
+
+# Split this file: one file per outcome:
+split -l 1 --numeric-suffixes gsmr_outcome.txt 
+for i in x* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
+
+# send an array of GSMR
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}"
+qsubshcom "$tmp_command" 1 30G GSMR_array 10:00:00 "-array=1-72"
+
+# Once it's over, concatenate the results in a unique file
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 > gsmr_result_vitaminDXiaEtAl.gsmr
+cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v "Exposure" >>  gsmr_result_vitaminDXiaEtAl.gsmr
+rm *[0-9].gsmr x* *badsnps qsub*
+```
+
+
+
+
+
+

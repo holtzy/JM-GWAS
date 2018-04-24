@@ -123,7 +123,7 @@ rm *[0-9].gsmr x* *badsnps qsub*
 ```
 
 Then I run a reverse GSMR
-```{r}
+```{r, eval=FALSE}
 # Specific repo
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/REVERSE
 

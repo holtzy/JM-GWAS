@@ -17,6 +17,8 @@ navbar:
       href: 4_GSMR.html
     - text: "PRS"
       href: 7_PRS.html
+    - text: "mtCOJO"
+      href: 8_mtCOJO.html
     - text: "Xia et al"
       href: 5_XIA_et_al.html
 

@@ -184,6 +184,7 @@ gsmr=read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
 
 # Read the meaning of files:
 meaning=read.table("0_DATA/list_of_traits_GSMR.csv", header=T, sep=",")
+nrow(meaning)
 primary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main=="X") ] )
 secondary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main!="X") ] )
 
@@ -192,7 +193,7 @@ thres_primary <- 0.05 / nrow(primary)
 thres_secondary <- 0.05 / nrow(secondary)
 ```
 
-
+Note that our study takes `r nrow(gsmr)` traits into account. (`r nrow(primary)` primary traits and `r nrow(secondary)` traits)
 
 
 ##Effect size

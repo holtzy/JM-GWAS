@@ -1,0 +1,19 @@
+---
+title: "Using Methylation data"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+<br><br>
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# A few library
+library(tidyverse)
+library(DT)
+```
+
+>This document applies the SMR tools to methylation data. 
+
+
+
+#- Method
+***

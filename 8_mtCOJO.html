@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 26 April 2018" />
+<meta name="author" content="by Yan Holtz - 30 April 2018" />
 
 
 <title>mtCOJO</title>
@@ -239,23 +239,36 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">mtCOJO</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 26 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 30 April 2018</em></h4>
 
 </div>
 
 
 <p><br><br></p>
 <blockquote>
-<p>This document applies the <a href="%22http://cnsgenomics.com/software/gcta/#mtCOJO%22">mtCOJO tool</a> to our data. It allows to check if the effect of Vitamin-D on several traits is due to its correlation with other Risk Factors. We thus make a corrected GWAS result of Vitamin D and run GSMR again.</p>
+<p>This document applies the <a href="%22http://cnsgenomics.com/software/gcta/#mtCOJO%22">mtCOJO tool</a> to our data. It allows to check if the causal effect of Vitamin-D on several traits can be biaised by other risk factors</p>
 </blockquote>
+<div id="method" class="section level1">
+<h1><span class="header-section-number">1</span> - Method</h1>
+<hr />
+<p>mtCOJO allows to build a new GWAS summary statistics for a trait using summary statistics of one or several other risk factors. Here are the risk factor we considere in our study:</p>
+<ul>
+<li>Burning on UV exposure) (Bonilla et al. 2013)</li>
+<li>Dark skin (Bonilla et al. 2013)</li>
+<li>Outdoor activity (physical activity)</li>
+<li>BMI</li>
+<li>Smoking</li>
+</ul>
+<p>We considered these risk factors one by one in a first step, and then considered them all together.</p>
 <p>The input of mtCOJO are:</p>
 <ul>
 <li><strong>mbfile</strong>: individual level genotypes of a reference sample. We will use the Hapmap3 SNPs of the UKB population. This is used for LD estimation.</li>
 <li><strong>mtcojo-file</strong>: a list of the GWAS summary data and prevalence of diseases. first row is the target trait. Other rows are covariate.</li>
 <li><strong>LD score references</strong>: come from the <a href="https://github.com/bulik/ldsc">LDSC tool</a>.</li>
 </ul>
+</div>
 <div id="run-mtcojo" class="section level1">
-<h1><span class="header-section-number">1</span> - Run mtCOJO</h1>
+<h1><span class="header-section-number">2</span> - Run mtCOJO</h1>
 <hr />
 <p>This script run mtCOJO. The target trait is VitaminD. The related risk factor is height. It gives me as output a new GWAS summary statistics corrected for height.</p>
 <pre class="r"><code># Specific repo
@@ -264,42 +277,149 @@ cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
 # Build mbfile
 ls  /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bed | sed &#39;s/.bed//&#39; &gt; mtcojo_mbfile.txt
 
-# Build mtcojo file
-echo &quot;vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma&quot; &gt; list_of_trait.txt
-echo &quot;Height /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/height_giant_2014.txt&quot; &gt;&gt; list_of_trait.txt
+# Build mtcojo file. One per risk factor
+echo &quot;vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma&quot; &gt; list_of_trait_BMI.txt
+echo &quot;BMI /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/height_giant_2014.txt&quot; &gt;&gt; list_of_trait_BMI.txt
+
+# Build mtcojo file with all the risk factors
+...
 
 # Send mCOJO
-tmp_command=&quot;gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_result_vitaminD&quot;
+tmp_command=&quot;gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_BMI_result_vitaminD&quot;
 qsubshcom &quot;$tmp_command&quot; 1 30G mtCOJO 10:00:00 &quot;&quot;</code></pre>
+<p>I now have a new file called <code>mtcojo_result_vitaminD_result.mtcojo.cma</code> that is a GWAS summary statistics corrected for height.</p>
 </div>
 <div id="run-gsmr" class="section level1">
-<h1><span class="header-section-number">2</span> - Run GSMR</h1>
+<h1><span class="header-section-number">3</span> - Run GSMR</h1>
 <hr />
 <p>I can re run GSMR on this new GWAS summary statistics:</p>
 <pre class="r"><code># Specific repo
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR
 
 # Prepare a file that gives the location of every b-file (one per chromosome)
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed &#39;s/.bed//&#39; &gt; gsmr_ref_data.txt
 
-# prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D
-echo &quot;vitaminD /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/mtcojo_result_vitaminD&quot; &gt; gsmr_exposure.txt
+# prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D. After correction for risk factors
+cat /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/mtcojo_result_vitaminD_result.mtcojo.cma | cut -f1-8 &gt; mtcojo_result_vitaminD_result.mtcojo.ma
+echo &quot;vitaminD /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR/mtcojo_result_vitaminD_result.mtcojo.ma&quot; &gt; gsmr_exposure.txt
 
 # prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
 cp /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_outcome.txt .
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
-for i in x* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
+for i in x0* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
 
 # send an array of GSMR
-tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 1 --out gsmr_reverse_result_vitaminDXiaEtAl_{TASK_ID}&quot;
-qsubshcom &quot;$tmp_command&quot; 1 30G GSMR_array 10:00:00 &quot;-array=1-72&quot;
+tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 0 --out gsmr_aftermtcojo_result_vitaminDXiaEtAl_{TASK_ID}&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G mtCOJO_GSMR_array 10:00:00 &quot;-array=1-72&quot;
 
 # Once it&#39;s over, concatenate the results in a unique file
-cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 &gt; gsmr_result_vitaminDXiaEtAl.gsmr
-cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_result_vitaminDXiaEtAl.gsmr
+cat gsmr_aftermtcojo_result_vitaminDXiaEtAl*gsmr | head -1 &gt; gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr
+cat gsmr_aftermtcojo_result_vitaminDXiaEtAl*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr
 rm *[0-9].gsmr x* *badsnps qsub*</code></pre>
+<p>Transfer the results locally for further analysis.</p>
+<pre class="bash"><code># Then from locally to delta
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR/gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr .</code></pre>
+</div>
+<div id="result" class="section level1 tabset">
+<h1><span class="header-section-number">4</span> - Result</h1>
+<hr />
+<div id="bmi" class="section level2">
+<h2><span class="header-section-number">4.1</span> BMI</h2>
+<pre class="r"><code># Read gsmr result after mtcojo
+gsmr=read.table(&quot;0_DATA/gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr&quot;, header = T)
+
+# Show the information of GSMR withour mtCOJO
+before &lt;- read.table(&quot;0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr&quot;, header = T)
+before &lt;- before %&gt;%
+    select(Outcome, bxy, p)
+colnames(before) &lt;- c(&quot;Outcome&quot;, &quot;bxy_before&quot;, &quot;p_before&quot;)
+
+# Merge
+gsmr &lt;- merge(gsmr, before, by.x=&quot;Outcome&quot;, by.y=&quot;Outcome&quot;, all.x=T)
+
+# Read the meaning of files:
+meaning=read.table(&quot;0_DATA/list_of_traits_GSMR.csv&quot;, header=T, sep=&quot;,&quot;)
+primary &lt;- gsmr %&gt;% filter( Outcome %in% meaning$Trait[ which(meaning$Main==&quot;X&quot;) ] )
+secondary &lt;- gsmr %&gt;% filter( Outcome %in% meaning$Trait[ which(meaning$Main!=&quot;X&quot;) ] )
+
+# Compute thresholds
+thres_primary &lt;- 0.05 / nrow(primary)
+thres_secondary &lt;- 0.05 / nrow(secondary)</code></pre>
+<p>Note that our study takes 73 traits into account. (36 primary traits and 35 traits)</p>
+<p>The following chart describes the effect sizes (bxy) of each primary traits: the effect of the risk factor on the disease. A few observation:</p>
+<ul>
+<li>2 significant associations after multiple testing correction.</li>
+<li>2 of have a positive effect size: more Vitamin-D, more trait.</li>
+<li>0 have a negative effect size.</li>
+</ul>
+<pre class="r"><code>primary %&gt;%
+  arrange(bxy) %&gt;%
+  filter(!is.na(bxy) ) %&gt;% 
+  mutate(name=factor(Outcome, unique(Outcome))) %&gt;%
+  mutate(significance=ifelse(p&lt;thres_primary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
+  mutate(significance_before=ifelse(p_before&lt;thres_primary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
+  ggplot( aes(x=name, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    geom_point(aes(y=bxy_before), size=2, shape=20) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;, &quot;red&quot;)) +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_line(size=0.1)) +
+    ylab(&quot;Bxy (Effect size)&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<div class="figure" style="text-align: center">
+<img src="8_mtCOJO_files/figure-html/unnamed-chunk-6-1.png" alt="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO" width="768" />
+<p class="caption">
+Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO
+</p>
+</div>
+<p>A few observation:</p>
+<ul>
+<li>3 significant associations after multiple testing correction.</li>
+<li>3 of have a positive effect size: more Vitamin-D, more trait.</li>
+<li>0 have a negative effect size.</li>
+</ul>
+<pre class="r"><code>secondary %&gt;%
+  arrange(bxy) %&gt;%
+  filter(!is.na(bxy) ) %&gt;% 
+  mutate(name=factor(Outcome, unique(Outcome))) %&gt;%
+  mutate(significance=ifelse(p&lt;thres_secondary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
+  mutate(significance_before=ifelse(p_before&lt;thres_secondary, &quot;signif multi.testing&quot;, ifelse(p&lt;0.05, &quot;signif&quot;, &quot;nonSignif&quot;) ) ) %&gt;%
+  ggplot( aes(x=name, y=bxy)) +
+    geom_hline( yintercept=0 ) +
+    geom_segment( aes(x=name, xend=name, y=bxy-se, yend=bxy+se), color=&quot;skyblue&quot;, alpha=0.7) +
+    geom_point(aes(color=significance), size=4) +
+    geom_point(aes(y=bxy_before), size=2, shape=20) +
+    scale_color_manual( values=c(&quot;grey&quot;, &quot;orange&quot;, &quot;red&quot;)) +
+    coord_flip() +
+    theme_bw() +
+    theme( panel.grid.major.y = element_line(size=0.1)) +
+    ylab(&quot;Bxy (Effect size)&quot;) +
+    xlab(&quot;&quot;)</code></pre>
+<div class="figure" style="text-align: center">
+<img src="8_mtCOJO_files/figure-html/unnamed-chunk-7-1.png" alt="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO" width="768" />
+<p class="caption">
+Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO
+</p>
+</div>
+</div>
+<div id="smoke" class="section level2">
+<h2><span class="header-section-number">4.2</span> Smoke</h2>
+</div>
+<div id="dark-skin-color" class="section level2">
+<h2><span class="header-section-number">4.3</span> Dark skin color</h2>
+</div>
+<div id="outdoor-activity" class="section level2">
+<h2><span class="header-section-number">4.4</span> Outdoor activity</h2>
+</div>
+<div id="burning-on-uv-exposure" class="section level2">
+<h2><span class="header-section-number">4.5</span> Burning on UV exposure</h2>
+</div>
 </div>
 
 &nbsp;

@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 30 April 2018" />
+<meta name="author" content="by Yan Holtz - 01 May 2018" />
 
 
 <title>Using Methylation data</title>
@@ -218,6 +218,9 @@ $(document).ready(function () {
   <a href="8_mtCOJO.html">mtCOJO</a>
 </li>
 <li>
+  <a href="9_Methylation.html">Methylation</a>
+</li>
+<li>
   <a href="5_XIA_et_al.html">Xia et al</a>
 </li>
       </ul>
@@ -239,7 +242,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Using Methylation data</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 30 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 May 2018</em></h4>
 
 </div>
 
@@ -251,6 +254,170 @@ $(document).ready(function () {
 <div id="method" class="section level1">
 <h1><span class="header-section-number">1</span> - Method</h1>
 <hr />
+<p>I’m gonna use the methylation data located on Delta at <code>/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy</code></p>
+<p>I run SMR on it, like I’ve done for eQTL data.</p>
+</div>
+<div id="dna-methylation-data-description" class="section level1 tabset">
+<h1><span class="header-section-number">2</span> - DNA methylation data description</h1>
+<hr />
+<pre class="r"><code># load data
+data &lt;- read.table(&quot;0_DATA/smr_methyl_VitaminDXiaEtAl.smr&quot;, header=T)</code></pre>
+<p>The data set is composed by <strong>85334 SNP - gene methylation associations</strong>. These association are distributed along every chromosomes:</p>
+<pre class="r"><code>table(data$ProbeChr) %&gt;%
+  as.data.frame() %&gt;%
+  ggplot( aes(x=Var1, y=Freq)) +
+    geom_bar(stat=&quot;identity&quot;, fill=&quot;skyblue&quot;) +
+    xlab(&quot;chromosome&quot;) +
+    ylab(&quot;Number of SNP / gene methylation association&quot;) +
+    theme_ipsum()</code></pre>
+<p><img src="9_Methylation_files/figure-html/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="run-smr" class="section level1">
+<h1><span class="header-section-number">3</span> - Run SMR</h1>
+<hr />
+<p>The first step of SMR consists to run the algorythm on every significant mQTL (mQTL = significant relationship between a SNP allele and the methylation of a gene). For each gene involved in an mQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.</p>
+<pre class="bash"><code># Good directory
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/9_METHYLATION
+
+# Run the analysis
+tmp_command=&quot;smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr{TASK_ID} --out smr_methyl_VitaminDXiaEtAl_{TASK_ID} --thread-num 1&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G smr_VitaminD 10:00:00 &quot;-array=1-22&quot;
+
+# Concatenate chromosome results
+cat smr_methyl_V*smr | head -1 &gt; smr_methyl_VitaminDXiaEtAl.smr
+cat smr_methyl_V*smr | grep -v &quot;^probeID&quot; &gt;&gt; smr_methyl_VitaminDXiaEtAl.smr
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/9_METHYLATION/smr_methyl_VitaminDXiaEtAl.smr  .</code></pre>
+</div>
+<div id="result" class="section level1 tabset">
+<h1><span class="header-section-number">4</span> - Result</h1>
+<hr />
+<p>Significant SMR results are found in 3 genetic regions. These 3 regions are also detected by the Vitamin D GWAS.</p>
+<pre class="r"><code># Compute signif threshold
+thres &lt;- 0.05 / nrow(data)</code></pre>
+<div id="chromo-4-gc" class="section level2">
+<h2><span class="header-section-number">4.1</span> Chromo 4 (GC)</h2>
+<pre class="r"><code># Show significant association:
+data %&gt;% 
+  filter(p_SMR &lt; thres &amp; topSNP_chr==4)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["probeID"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["ProbeChr"],"name":[2],"type":["int"],"align":["right"]},{"label":["Gene"],"name":[3],"type":["fctr"],"align":["left"]},{"label":["Probe_bp"],"name":[4],"type":["int"],"align":["right"]},{"label":["topSNP"],"name":[5],"type":["fctr"],"align":["left"]},{"label":["topSNP_chr"],"name":[6],"type":["int"],"align":["right"]},{"label":["topSNP_bp"],"name":[7],"type":["int"],"align":["right"]},{"label":["A1"],"name":[8],"type":["fctr"],"align":["left"]},{"label":["A2"],"name":[9],"type":["fctr"],"align":["left"]},{"label":["Freq"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["b_GWAS"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["se_GWAS"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["p_GWAS"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["b_eQTL"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["se_eQTL"],"name":[15],"type":["dbl"],"align":["right"]},{"label":["p_eQTL"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["b_SMR"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["se_SMR"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["p_SMR"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["p_HEIDI"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["nsnp_HEIDI"],"name":[21],"type":["int"],"align":["right"]}],"data":[{"1":"cg17429887","2":"4","3":"GC*","4":"72723478","5":"rs1491714","6":"4","7":"72704419","8":"C","9":"T","10":"0.913573","11":"0.0546","12":"0.0052","13":"1.904e-25","14":"0.468546","15":"0.0592018","16":"2.484665e-15","17":"0.116531","18":"0.0184381","19":"2.613709e-10","20":"2.236695e-07","21":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p><br></p>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs3755967.png" />
+
+</div>
+<p>Can I make a diagram of these associations?</p>
+<pre class="r"><code>tmp &lt;- data %&gt;%
+  filter(ProbeChr==4) %&gt;%
+  filter(Probe_bp&gt;71000000 &amp; Probe_bp&lt;74000000) %&gt;%
+  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
+  gather(key, position, -1, -2, -3) %&gt;%
+  mutate(position=position/1000000)
+  
+tmp %&gt;% ggplot( aes(y=position, x=key)) +
+    geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR&lt;thres,&quot;signif&quot;,&quot;non signif&quot;))) +
+    geom_point() +
+    geom_text( 
+      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      aes( label=Gene) , angle=45, color=&quot;grey&quot;, hjust=1, nudge_x = -0.1
+    ) +
+    geom_text( 
+      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      aes( x=key, label=topSNP) , angle=45, color=&quot;grey&quot;, hjust=0, nudge_x = 0.1
+    ) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab(&quot;&quot;) +
+    ylab(&quot;Position (Mb)&quot;) +
+    labs(color=&quot;SMR assoc with Vitamin-D&quot;)</code></pre>
+<p><img src="9_Methylation_files/figure-html/unnamed-chunk-7-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<div id="chromo-11-14mb-cyp2r1" class="section level2">
+<h2><span class="header-section-number">4.2</span> Chromo 11 ~ 14Mb (CYP2R1)</h2>
+<pre class="r"><code># Show significant association:
+data %&gt;% 
+  filter(p_SMR &lt; thres &amp; topSNP_chr==11 &amp; topSNP_bp&lt;40000000) %&gt;%
+  arrange(Probe_bp)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["probeID"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["ProbeChr"],"name":[2],"type":["int"],"align":["right"]},{"label":["Gene"],"name":[3],"type":["fctr"],"align":["left"]},{"label":["Probe_bp"],"name":[4],"type":["int"],"align":["right"]},{"label":["topSNP"],"name":[5],"type":["fctr"],"align":["left"]},{"label":["topSNP_chr"],"name":[6],"type":["int"],"align":["right"]},{"label":["topSNP_bp"],"name":[7],"type":["int"],"align":["right"]},{"label":["A1"],"name":[8],"type":["fctr"],"align":["left"]},{"label":["A2"],"name":[9],"type":["fctr"],"align":["left"]},{"label":["Freq"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["b_GWAS"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["se_GWAS"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["p_GWAS"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["b_eQTL"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["se_eQTL"],"name":[15],"type":["dbl"],"align":["right"]},{"label":["p_eQTL"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["b_SMR"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["se_SMR"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["p_SMR"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["p_HEIDI"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["nsnp_HEIDI"],"name":[21],"type":["int"],"align":["right"]}],"data":[{"1":"cg22106556","2":"11","3":"RRAS2","4":"14380825","5":"rs11023197","6":"11","7":"14380998","8":"G","9":"A","10":"0.647856","11":"0.0164","12":"0.0021","13":"1.416e-14","14":"0.734409","15":"0.0320909","16":"6.513048e-116","17":"0.0223309","18":"0.00302135","19":"1.456941e-13","20":"7.272002e-08","21":"20"},{"1":"cg19336497","2":"11","3":"RRAS2*","4":"14380999","5":"rs10832242","6":"11","7":"14340504","8":"T","9":"C","10":"0.645931","11":"0.0173","12":"0.0021","13":"4.922e-17","14":"1.226210","15":"0.0216580","16":"0.000000e+00","17":"0.0141086","18":"0.00173063","19":"3.572232e-16","20":"4.348532e-10","21":"20"},{"1":"cg01475538","2":"11","3":"RRAS2*","4":"14381234","5":"rs10832242","6":"11","7":"14340504","8":"T","9":"C","10":"0.645931","11":"0.0173","12":"0.0021","13":"4.922e-17","14":"-0.263433","15":"0.0347739","16":"3.574574e-14","17":"-0.0656712","18":"0.01177690","19":"2.457111e-08","20":"5.694381e-03","21":"20"},{"1":"cg04467639","2":"11","3":"COPB1","4":"14495049","5":"rs10832276","6":"11","7":"14483274","8":"C","9":"T","10":"0.631027","11":"0.0210","12":"0.0020","13":"4.416e-25","14":"1.264190","15":"0.0182259","16":"0.000000e+00","17":"0.0166115","18":"0.00160007","19":"3.003100e-25","20":"1.214631e-09","21":"20"},{"1":"cg25251204","2":"11","3":"CYP2R1*","4":"14927456","5":"rs1553006","6":"11","7":"14922950","8":"G","9":"A","10":"0.548406","11":"-0.0175","12":"0.0020","13":"6.077e-19","14":"0.633153","15":"0.0312926","16":"4.981466e-91","17":"-0.0276395","18":"0.00344152","19":"9.653631e-16","20":"2.421411e-10","21":"20"},{"1":"cg00085434","2":"11","3":"CYP2R1*","4":"14927489","5":"rs1553006","6":"11","7":"14922950","8":"G","9":"A","10":"0.548406","11":"-0.0175","12":"0.0020","13":"6.077e-19","14":"0.599996","15":"0.0310136","16":"2.192011e-83","17":"-0.0291668","18":"0.00365844","19":"1.555153e-15","20":"9.474278e-11","21":"20"},{"1":"cg16394018","2":"11","3":"COPB1","4":"14927549","5":"rs1553006","6":"11","7":"14922950","8":"G","9":"A","10":"0.548406","11":"-0.0175","12":"0.0020","13":"6.077e-19","14":"0.351599","15":"0.0320481","16":"5.270551e-28","17":"-0.0497727","18":"0.00727592","19":"7.878620e-12","20":"3.627764e-05","21":"20"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs10741657_large.png" />
+
+</div>
+<pre class="r"><code>tmp &lt;- data %&gt;%
+  filter(ProbeChr==11) %&gt;%
+  filter(Probe_bp&gt;14000000 &amp; Probe_bp&lt;15500000) %&gt;%
+  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
+  gather(key, position, -1, -2, -3) %&gt;%
+  mutate(position=position/1000000)
+  
+tmp %&gt;% ggplot( aes(y=position, x=key)) +
+    geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR&lt;thres,&quot;signif&quot;,&quot;non signif&quot;))) +
+    geom_point() +
+    geom_text( 
+      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      aes( label=Gene) , angle=45, color=&quot;grey&quot;, hjust=1, nudge_x = -0.1
+    ) +
+    geom_text( 
+      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      aes( x=key, label=topSNP) , angle=45, color=&quot;grey&quot;, hjust=0, nudge_x = 0.1
+    ) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab(&quot;&quot;) +
+    ylab(&quot;Position (Mb)&quot;) +
+    labs(color=&quot;SMR assoc with Vitamin-D&quot;)</code></pre>
+<p><img src="9_Methylation_files/figure-html/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<div id="chromo-11-71mb-dhcr7" class="section level2">
+<h2><span class="header-section-number">4.3</span> Chromo 11 ~ 71Mb (DHCR7)</h2>
+<pre class="r"><code># Show significant association:
+data %&gt;% 
+  filter(p_SMR &lt; thres &amp; topSNP_chr==11 &amp; topSNP_bp&gt;40000000) %&gt;%
+  arrange(Probe_bp)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["probeID"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["ProbeChr"],"name":[2],"type":["int"],"align":["right"]},{"label":["Gene"],"name":[3],"type":["fctr"],"align":["left"]},{"label":["Probe_bp"],"name":[4],"type":["int"],"align":["right"]},{"label":["topSNP"],"name":[5],"type":["fctr"],"align":["left"]},{"label":["topSNP_chr"],"name":[6],"type":["int"],"align":["right"]},{"label":["topSNP_bp"],"name":[7],"type":["int"],"align":["right"]},{"label":["A1"],"name":[8],"type":["fctr"],"align":["left"]},{"label":["A2"],"name":[9],"type":["fctr"],"align":["left"]},{"label":["Freq"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["b_GWAS"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["se_GWAS"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["p_GWAS"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["b_eQTL"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["se_eQTL"],"name":[15],"type":["dbl"],"align":["right"]},{"label":["p_eQTL"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["b_SMR"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["se_SMR"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["p_SMR"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["p_HEIDI"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["nsnp_HEIDI"],"name":[21],"type":["int"],"align":["right"]}],"data":[{"1":"cg09435499","2":"11","3":"FLJ42102*","4":"71117840","5":"rs3763856","6":"11","7":"71125345","8":"A","9":"G","10":"0.663275","11":"0.0243","12":"0.0021","13":"1.449e-30","14":"-0.329494","15":"0.0349091","16":"3.777287e-21","17":"-0.0737495","18":"0.01008330","19":"2.592353e-13","20":"7.498506e-03","21":"19"},{"1":"cg06550274","2":"11","3":"NADSYN1","4":"71150247","5":"rs736894","6":"11","7":"71152258","8":"C","9":"T","10":"0.816826","11":"0.0333","12":"0.0023","13":"3.881e-47","14":"0.878520","15":"0.0413995","16":"6.170747e-100","17":"0.0379047","18":"0.00316934","19":"5.770937e-33","20":"2.865001e-05","21":"15"},{"1":"cg10763288","2":"11","3":"DHCR7*","4":"71158925","5":"rs3794060","6":"11","7":"71187679","8":"T","9":"C","10":"0.785247","11":"0.0352","12":"0.0023","13":"7.743e-54","14":"0.280750","15":"0.0402710","16":"3.135488e-12","17":"0.1253780","18":"0.01976240","19":"2.234549e-10","20":"5.580729e-03","21":"11"},{"1":"cg04774822","2":"11","3":"NADSYN1*","4":"71165839","5":"rs12800438","6":"11","7":"71171003","8":"A","9":"G","10":"0.786702","11":"0.0358","12":"0.0023","13":"1.406e-55","14":"-0.370390","15":"0.0395057","16":"6.877739e-21","17":"-0.0966548","18":"0.01203490","19":"9.652160e-16","20":"6.061979e-03","21":"19"},{"1":"cg27048527","2":"11","3":"NADSYN1*","4":"71184503","5":"rs1792229","6":"11","7":"71179395","8":"A","9":"G","10":"0.825068","11":"0.0350","12":"0.0023","13":"2.905e-51","14":"-0.411415","15":"0.0440426","16":"9.517246e-21","17":"-0.0850723","18":"0.01068610","19":"1.706405e-15","20":"2.032934e-03","21":"12"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs12785878.png" />
+
+</div>
+<pre class="r"><code>tmp &lt;- data %&gt;%
+  filter(ProbeChr==11) %&gt;%
+  filter(Probe_bp&gt;71000000 &amp; Probe_bp&lt;72000000) %&gt;%
+  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
+  gather(key, position, -1, -2, -3) %&gt;%
+  mutate(position=position/1000000)
+  
+tmp %&gt;% ggplot( aes(y=position, x=key)) +
+    geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR&lt;thres,&quot;signif&quot;,&quot;non signif&quot;))) +
+    geom_point() +
+    geom_text( 
+      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      aes( label=Gene) , angle=45, color=&quot;grey&quot;, hjust=1, nudge_x = -0.1
+    ) +
+    geom_text_repel( 
+      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      aes( x=key, label=topSNP) , angle=45, color=&quot;grey&quot;, hjust=0, nudge_x = 0.1
+    ) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab(&quot;&quot;) +
+    ylab(&quot;Position (Mb)&quot;) +
+    labs(color=&quot;SMR assoc with Vitamin-D&quot;)</code></pre>
+<p><img src="9_Methylation_files/figure-html/unnamed-chunk-11-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
 </div>
 
 &nbsp;

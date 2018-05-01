@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 26 April 2018" />
+<meta name="author" content="by Yan Holtz - 01 May 2018" />
 
 
 <title>GSMR</title>
@@ -27,10 +27,13 @@
 <link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
 <script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
 <script src="site_libs/htmlwidgets-1.2/htmlwidgets.js"></script>
-<script src="site_libs/datatables-binding-0.2/datatables.js"></script>
-<link href="site_libs/dt-core-1.10.12/css/jquery.dataTables.min.css" rel="stylesheet" />
-<link href="site_libs/dt-core-1.10.12/css/jquery.dataTables.extra.css" rel="stylesheet" />
-<script src="site_libs/dt-core-1.10.12/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="site_libs/datatables-binding-0.4/datatables.js"></script>
+<link href="site_libs/dt-core-1.10.16/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="site_libs/dt-core-1.10.16/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="site_libs/dt-core-1.10.16/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.0.0/css/crosstalk.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.0.0/js/crosstalk.min.js"></script>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -223,6 +226,9 @@ $(document).ready(function () {
   <a href="8_mtCOJO.html">mtCOJO</a>
 </li>
 <li>
+  <a href="9_Methylation.html">Methylation</a>
+</li>
+<li>
   <a href="5_XIA_et_al.html">Xia et al</a>
 </li>
       </ul>
@@ -244,7 +250,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">GSMR</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 26 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 May 2018</em></h4>
 
 </div>
 
@@ -335,10 +341,10 @@ more list_of_traits_GSMR.csv | awk &#39;BEGIN{FS=&quot;,&quot;}{print $2, &quot;
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
-for i in x* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
+for i in x0* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
 
 # send an array of GSMR
-tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID} --gsmr-alg 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}&quot;
+tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 0 --out gsmr_result_vitaminDXiaEtAl_{TASK_ID}&quot;
 qsubshcom &quot;$tmp_command&quot; 1 30G GSMR_array 10:00:00 &quot;-array=1-72&quot;
 
 # Once it&#39;s over, concatenate the results in a unique file
@@ -349,20 +355,23 @@ rm *[0-9].gsmr x* *badsnps qsub*</code></pre>
 <pre class="r"><code># Specific repo
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/REVERSE
 
-# copy files done for the forward GSMR
-cp ../gsmr_ref_data.txt ../gsmr_exposure.txt ../gsmr_outcome.txt .
+# Prepare a file that gives the location of every b-file (one per chromosome) --&gt; I don&#39;t take hapmap3, cauz may be the signif SNP are not in Hapmap3
+ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_geno/ukbEUR_cal_chr*_v2_QC.bed | sed &#39;s/.bed//&#39; &gt; gsmr_ref_data.txt
+
+# copy GWAS sumstat files done for the forward GSMR
+cp ../gsmr_exposure.txt ../gsmr_outcome.txt .
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 
-for i in x* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
+for i in x0* ; do a=$(echo $i | sed &#39;s/x0/x/&#39;) ; mv $i $a ; done
 
 # send an array of GSMR
 tmp_command=&quot;gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 1 --out gsmr_reverse_result_vitaminDXiaEtAl_{TASK_ID}&quot;
 qsubshcom &quot;$tmp_command&quot; 1 30G GSMR_array 10:00:00 &quot;-array=1-72&quot;
 
 # Once it&#39;s over, concatenate the results in a unique file
-cat gsmr_result_vitaminDXiaEtAl_*gsmr | head -1 &gt; gsmr_result_vitaminDXiaEtAl.gsmr
-cat gsmr_result_vitaminDXiaEtAl_*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_result_vitaminDXiaEtAl.gsmr
+cat gsmr_reverse_result*gsmr | head -1 &gt; gsmr_reverse_result_vitaminDXiaEtAl.gsmr
+cat gsmr_reverse_result*gsmr | grep -v &quot;Exposure&quot; &gt;&gt;  gsmr_reverse_result_vitaminDXiaEtAl.gsmr
 rm *[0-9].gsmr x* *badsnps qsub*</code></pre>
 <p>First I transfer the results locally for further analysis.</p>
 <pre class="bash"><code># Then from locally to delta
@@ -503,8 +512,8 @@ Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / re
 <hr />
 <p>The 71 GSMR test results are displayed in this table in case you need to check a specific value:</p>
 <pre class="r"><code>datatable(gsmr %&gt;% arrange(p), rownames = FALSE, options = list(pageLength = 15) )</code></pre>
-<div id="htmlwidget-c50503bd870f8fe78ee6" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-c50503bd870f8fe78ee6">{"x":{"filter":"none","data":[["vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD"],["Myeloid","Granulocytecount","Whitebloodcellcount","Neutrophil(x4)","Height","Alzheimer'sDisease","Basophilcount","PlateletCount","Lymphocytecount","HDLcholesterol","allergicrhinitis","Plateletcrit","Monocytecount","Dementia-Alzheimer","hypertensivedisease","insomnia","MeanCorpuscularHemoglobin","maculardegeneration","osteoarthritis","irondeficiencyanemias","systolicbloodpressure","acutereactiontostress","Reticulocytecount","Plateletditributionwidth","Eosinophilicesophagitis","IQ(UKB)","herniaabdominopelviccavity","BMI","DepressiveSymptoms","UlcerativeColitis","psychiatricdisorder","majordepressivedisorder","CAD","Hemoglobin","AutismSpectrumDisorder","dermatophytosis","hemorrhoids","MajorDepressiveDisorder","Redcelldistributionwidth","dyslipidemia","typeIIdiabetes","peripheralvasculardisease","Meanplateletvolume","Neuroticism","diastolicbloodpressure","IQ","Schizophrenia","pepticulcers","RheumatoidArthritis","Parkinson","AgedMacularDegeneration","cardiovasculardisease","irritablebowelsyndrome","Waist-to-hipratioadjustedforBMI","varicoseveinsoflowerextremities","asthma","Crohn'sDisease","BipolarDisorder","diseasecount","Hematocrit","LDLcholesterol","ICV","Wellbeing(x2)","Redbloodcellcount","Meancorpuscularvolume","osteoporosis","EduYear","triglycerides","cancer","ImmatureFractionofReticulocytes","typeIIdiabetes"],[0.188634,0.183935,0.184679,0.1788,0.11996,-0.471287,0.0956538,0.0974073,0.0916145,0.120789,0.273004,0.0871263,0.0820581,-0.156573,0.174548,-0.410881,-0.0695121,0.451325,0.157792,-0.363941,-0.0610669,0.285096,-0.0453709,-0.0433942,0.0430098,0.0382714,0.146085,0.0390816,0.0365254,-0.217529,-0.139598,-0.120643,-0.0903309,-0.0354376,-0.270037,0.172684,-0.11376,-0.198607,0.0323647,-0.078836,-0.119132,0.166394,-0.0281917,0.0262072,-0.0338941,-0.0391354,-0.0753773,0.166237,-0.106079,-0.127228,0.0855171,0.0548223,0.0986047,0.0137426,-0.0615741,-0.024106,-0.0642234,0.0591033,0.0145178,0.00865116,0.0116192,0.0126072,-0.00393406,0.00387763,-0.00294016,-0.0133888,-0.00177883,-0.00274909,0.00427858,0.0012178,-0.00308985],[0.0383439,0.0382306,0.0386236,0.0381451,0.0304114,0.164363,0.0369583,0.0385448,0.0380294,0.0507475,0.116511,0.0386905,0.0377571,0.0732505,0.0872544,0.21424,0.0373633,0.255748,0.103674,0.245607,0.0467072,0.230119,0.0379479,0.0379387,0.0376307,0.0353065,0.138459,0.0384971,0.0367666,0.219458,0.142993,0.124603,0.0951306,0.03746,0.285764,0.185889,0.126399,0.222408,0.0373557,0.0913678,0.141191,0.203082,0.0381701,0.0358304,0.047101,0.054881,0.10909,0.270175,0.182646,0.219072,0.158345,0.103689,0.192739,0.0437958,0.214124,0.0875665,0.238288,0.221769,0.0546114,0.0372754,0.0556041,0.0897973,0.0296117,0.0375836,0.0372534,0.190097,0.0279101,0.0493619,0.104364,0.0374413,0.126575],[8.67511e-07,1.50021e-06,1.73982e-06,2.76738e-06,7.99435e-05,0.00413909,0.00964912,0.0115003,0.0159943,0.0173034,0.0191215,0.0243299,0.0297567,0.0325573,0.0454511,0.0551293,0.0628236,0.0776103,0.128008,0.138392,0.191063,0.215381,0.231848,0.252708,0.253061,0.278375,0.29139,0.310018,0.320495,0.321583,0.328935,0.332932,0.342343,0.344142,0.344677,0.35291,0.368113,0.371865,0.386276,0.388224,0.3988,0.41259,0.460161,0.464521,0.471768,0.475786,0.489589,0.538362,0.561381,0.561404,0.58915,0.597001,0.608934,0.753682,0.773681,0.783095,0.787529,0.789848,0.790363,0.81647,0.834478,0.888347,0.894308,0.917825,0.937094,0.94385,0.949182,0.955587,0.967298,0.974053,0.980525],[17,17,16,17,15,17,17,17,17,16,17,17,16,17,16,17,17,17,17,17,17,17,17,17,17,17,17,17,16,17,17,17,17,17,17,17,17,17,17,17,16,17,17,14,15,17,17,17,17,17,16,17,17,17,17,17,16,16,17,17,16,17,16,17,17,17,17,16,17,17,17]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>Exposure<\/th>\n      <th>Outcome<\/th>\n      <th>bxy<\/th>\n      <th>se<\/th>\n      <th>p<\/th>\n      <th>nsnp<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]},"selection":{"mode":"multiple","selected":null,"target":"row"}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-a8af0e302630e7b312d0" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a8af0e302630e7b312d0">{"x":{"filter":"none","data":[["vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD","vitaminD"],["Myeloid","Granulocytecount","Whitebloodcellcount","Neutrophil(x4)","Height","Alzheimer'sDisease","Basophilcount","PlateletCount","Lymphocytecount","HDLcholesterol","allergicrhinitis","Plateletcrit","Monocytecount","Dementia-Alzheimer","hypertensivedisease","insomnia","MeanCorpuscularHemoglobin","maculardegeneration","osteoarthritis","irondeficiencyanemias","systolicbloodpressure","acutereactiontostress","Reticulocytecount","Plateletditributionwidth","Eosinophilicesophagitis","IQ(UKB)","herniaabdominopelviccavity","BMI","DepressiveSymptoms","UlcerativeColitis","psychiatricdisorder","majordepressivedisorder","CAD","Hemoglobin","AutismSpectrumDisorder","dermatophytosis","hemorrhoids","MajorDepressiveDisorder","Redcelldistributionwidth","dyslipidemia","typeIIdiabetes","peripheralvasculardisease","Meanplateletvolume","Neuroticism","diastolicbloodpressure","IQ","Schizophrenia","pepticulcers","RheumatoidArthritis","Parkinson","AgedMacularDegeneration","cardiovasculardisease","irritablebowelsyndrome","Waist-to-hipratioadjustedforBMI","varicoseveinsoflowerextremities","asthma","Crohn'sDisease","BipolarDisorder","diseasecount","Hematocrit","LDLcholesterol","ICV","Wellbeing(x2)","Redbloodcellcount","Meancorpuscularvolume","osteoporosis","EduYear","triglycerides","cancer","ImmatureFractionofReticulocytes","typeIIdiabetes"],[0.188634,0.183935,0.184679,0.1788,0.11996,-0.471287,0.0956538,0.0974073,0.0916145,0.120789,0.273004,0.0871263,0.0820581,-0.156573,0.174548,-0.410881,-0.0695121,0.451325,0.157792,-0.363941,-0.0610669,0.285096,-0.0453709,-0.0433942,0.0430098,0.0382714,0.146085,0.0390816,0.0365254,-0.217529,-0.139598,-0.120643,-0.0903309,-0.0354376,-0.270037,0.172684,-0.11376,-0.198607,0.0323647,-0.078836,-0.119132,0.166394,-0.0281917,0.0262072,-0.0338941,-0.0391354,-0.0753773,0.166237,-0.106079,-0.127228,0.0855171,0.0548223,0.0986047,0.0137426,-0.0615741,-0.024106,-0.0642234,0.0591033,0.0145178,0.00865116,0.0116192,0.0126072,-0.00393406,0.00387763,-0.00294016,-0.0133888,-0.00177883,-0.00274909,0.00427858,0.0012178,-0.00308985],[0.0383439,0.0382306,0.0386236,0.0381451,0.0304114,0.164363,0.0369583,0.0385448,0.0380294,0.0507475,0.116511,0.0386905,0.0377571,0.0732505,0.0872544,0.21424,0.0373633,0.255748,0.103674,0.245607,0.0467072,0.230119,0.0379479,0.0379387,0.0376307,0.0353065,0.138459,0.0384971,0.0367666,0.219458,0.142993,0.124603,0.0951306,0.03746,0.285764,0.185889,0.126399,0.222408,0.0373557,0.0913678,0.141191,0.203082,0.0381701,0.0358304,0.047101,0.054881,0.10909,0.270175,0.182646,0.219072,0.158345,0.103689,0.192739,0.0437958,0.214124,0.0875665,0.238288,0.221769,0.0546114,0.0372754,0.0556041,0.0897973,0.0296117,0.0375836,0.0372534,0.190097,0.0279101,0.0493619,0.104364,0.0374413,0.126575],[8.67511e-07,1.50021e-06,1.73982e-06,2.76738e-06,7.99435e-05,0.00413909,0.00964912,0.0115003,0.0159943,0.0173034,0.0191215,0.0243299,0.0297567,0.0325573,0.0454511,0.0551293,0.0628236,0.0776103,0.128008,0.138392,0.191063,0.215381,0.231848,0.252708,0.253061,0.278375,0.29139,0.310018,0.320495,0.321583,0.328935,0.332932,0.342343,0.344142,0.344677,0.35291,0.368113,0.371865,0.386276,0.388224,0.3988,0.41259,0.460161,0.464521,0.471768,0.475786,0.489589,0.538362,0.561381,0.561404,0.58915,0.597001,0.608934,0.753682,0.773681,0.783095,0.787529,0.789848,0.790363,0.81647,0.834478,0.888347,0.894308,0.917825,0.937094,0.94385,0.949182,0.955587,0.967298,0.974053,0.980525],[17,17,16,17,15,17,17,17,17,16,17,17,16,17,16,17,17,17,17,17,17,17,17,17,17,17,17,17,16,17,17,17,17,17,17,17,17,17,17,17,16,17,17,14,15,17,17,17,17,17,16,17,17,17,17,17,16,16,17,17,16,17,16,17,17,17,17,16,17,17,17]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>Exposure<\/th>\n      <th>Outcome<\/th>\n      <th>bxy<\/th>\n      <th>se<\/th>\n      <th>p<\/th>\n      <th>nsnp<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
 </div>
 <div id="conclusion" class="section level1">
 <h1><span class="header-section-number">6</span> - Conclusion</h1>

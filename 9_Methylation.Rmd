@@ -9,6 +9,8 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 # A few library
 library(tidyverse)
 library(DT)
+library(hrbrthemes)
+library(ggrepel)
 ```
 
 >This document applies the SMR tools to methylation data. 
@@ -17,13 +19,7 @@ library(DT)
 
 #- Method
 ***
-
-I'm gonna use the methylation data:
-```{r, eval=FALSE}
-
-# Methylation data are on delta:
-/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy
-```
+I'm gonna use the methylation data located on Delta at `/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy`
 
 I run SMR on it, like I've done for eQTL data.
 
@@ -31,8 +27,24 @@ I run SMR on it, like I've done for eQTL data.
 
 
 
-#- ANDm description {.tabset}
+#- DNA methylation data description {.tabset}
 ***
+```{r, warning=FALSE}
+# load data
+data <- read.table("0_DATA/smr_methyl_VitaminDXiaEtAl.smr", header=T)
+```
+
+The data set is composed by **`r nrow(data)` SNP - gene methylation associations**. These association are distributed along every chromosomes:
+
+```{r, fig.align="center"}
+table(data$ProbeChr) %>%
+  as.data.frame() %>%
+  ggplot( aes(x=Var1, y=Freq)) +
+    geom_bar(stat="identity", fill="skyblue") +
+    xlab("chromosome") +
+    ylab("Number of SNP / gene methylation association") +
+    theme_ipsum()
+```
 
 
 
@@ -53,14 +65,161 @@ tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/u
 qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
 
 # Concatenate chromosome results
-cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
-cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
-mv smr_VitaminDXiaEtAl.smr smr_VitaminDXiaEtAl_westra.smr
+cat smr_methyl_V*smr | head -1 > smr_methyl_VitaminDXiaEtAl.smr
+cat smr_methyl_V*smr | grep -v "^probeID" >> smr_methyl_VitaminDXiaEtAl.smr
 
 # Transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_WESTRA_ET_AL/smr_VitaminDXiaEtAl_westra.smr  .
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/9_METHYLATION/smr_methyl_VitaminDXiaEtAl.smr  .
 ```
+
+
+
+
+
+
+
+#- Result {.tabset}
+***
+
+Significant SMR results are found in 3 genetic regions. These 3 regions are also detected by the Vitamin D GWAS.
+```{r, warning=FALSE}
+# Compute signif threshold
+thres <- 0.05 / nrow(data)
+```
+
+## Chromo 4 (GC)
+
+```{r, warning=FALSE}
+# Show significant association:
+data %>% 
+  filter(p_SMR < thres & topSNP_chr==4)
+```
+
+<br>
+
+![](IMG/VitaminD_XiaEtAl.rs3755967.png)
+
+
+Can I make a diagram of these associations?
+
+```{r, fig.width=10, fig.align="center", warning=FALSE}
+tmp <- data %>%
+  filter(ProbeChr==4) %>%
+  filter(Probe_bp>71000000 & Probe_bp<74000000) %>%
+  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
+  gather(key, position, -1, -2, -3) %>%
+  mutate(position=position/1000000)
+  
+tmp %>% ggplot( aes(y=position, x=key)) +
+    geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR<thres,"signif","non signif"))) +
+    geom_point() +
+    geom_text( 
+      data=subset(tmp, key=="Probe_bp") %>% select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
+      aes( label=Gene) , angle=45, color="grey", hjust=1, nudge_x = -0.1
+    ) +
+    geom_text( 
+      data=subset(tmp, key=="topSNP_bp") %>% select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
+      aes( x=key, label=topSNP) , angle=45, color="grey", hjust=0, nudge_x = 0.1
+    ) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab("") +
+    ylab("Position (Mb)") +
+    labs(color="SMR assoc with Vitamin-D")
+
+```
+
+
+## Chromo 11 ~ 14Mb (CYP2R1)
+```{r}
+# Show significant association:
+data %>% 
+  filter(p_SMR < thres & topSNP_chr==11 & topSNP_bp<40000000) %>%
+  arrange(Probe_bp)
+```
+
+![](IMG/VitaminD_XiaEtAl.rs10741657_large.png)
+
+```{r, fig.width=10, fig.align="center", warning=FALSE}
+tmp <- data %>%
+  filter(ProbeChr==11) %>%
+  filter(Probe_bp>14000000 & Probe_bp<15500000) %>%
+  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
+  gather(key, position, -1, -2, -3) %>%
+  mutate(position=position/1000000)
+  
+tmp %>% ggplot( aes(y=position, x=key)) +
+    geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR<thres,"signif","non signif"))) +
+    geom_point() +
+    geom_text( 
+      data=subset(tmp, key=="Probe_bp") %>% select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
+      aes( label=Gene) , angle=45, color="grey", hjust=1, nudge_x = -0.1
+    ) +
+    geom_text( 
+      data=subset(tmp, key=="topSNP_bp") %>% select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
+      aes( x=key, label=topSNP) , angle=45, color="grey", hjust=0, nudge_x = 0.1
+    ) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab("") +
+    ylab("Position (Mb)") +
+    labs(color="SMR assoc with Vitamin-D")
+
+```
+
+
+
+
+## Chromo 11 ~ 71Mb (DHCR7)
+```{r}
+# Show significant association:
+data %>% 
+  filter(p_SMR < thres & topSNP_chr==11 & topSNP_bp>40000000) %>%
+  arrange(Probe_bp)
+```
+
+
+![](IMG/VitaminD_XiaEtAl.rs12785878.png)
+
+```{r, fig.width=10, fig.align="center", warning=FALSE}
+tmp <- data %>%
+  filter(ProbeChr==11) %>%
+  filter(Probe_bp>71000000 & Probe_bp<72000000) %>%
+  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
+  gather(key, position, -1, -2, -3) %>%
+  mutate(position=position/1000000)
+  
+tmp %>% ggplot( aes(y=position, x=key)) +
+    geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR<thres,"signif","non signif"))) +
+    geom_point() +
+    geom_text( 
+      data=subset(tmp, key=="Probe_bp") %>% select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
+      aes( label=Gene) , angle=45, color="grey", hjust=1, nudge_x = -0.1
+    ) +
+    geom_text_repel( 
+      data=subset(tmp, key=="topSNP_bp") %>% select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
+      aes( x=key, label=topSNP) , angle=45, color="grey", hjust=0, nudge_x = 0.1
+    ) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab("") +
+    ylab("Position (Mb)") +
+    labs(color="SMR assoc with Vitamin-D")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

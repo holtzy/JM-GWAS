@@ -33,12 +33,12 @@ library(ggrepel)
 
 
 
-#- Vitamin-D GWAS: description {.tabset }
+
+
+
+#Manhattan {.tabset .tabset-fade .tabset-pills}
 ***
 
-
-
-##Manhattan {.tabset .tabset-fade .tabset-pills}
 The genetic determinism of Vitamin-D appears to be **oligogenic** with about 6 loci involved. The association on chromosome 4 is very strong, with a -log(p-value) > 300.
 ```{r, warning=F, message=F}
 # Read result
@@ -57,7 +57,9 @@ Hit_SNP <- c(
 Hit_SNP <- Hit_SNP[Hit_SNP != "NONE"]
 ```
 
-### Classic
+
+
+## Classic
 ```{r, fig.width=13, fig.height=6, warning=FALSE }
 # -------- Add cumulative position + clumping information to data
 don <- data %>% 
@@ -111,7 +113,7 @@ ggplot(don, aes(x=BPcum, y=-log10(P))) +
 ```
 
 
-###Cut X-axis and interactive
+## Cut X-axis and interactive
 In this plot, the SNP involved in the significant associations have been removed. The idea is to focus on putative new association we will find in the UKB.
 ```{r, fig.width=10, fig.height=6, warning=FALSE, message=FALSE, fig.cap="Interactive version of the Manhattan plot. Only SNP with -log10(P) >2 & <8 are represented. Hover a point to have information concerning the SNP. Select a specific zone with your mouse to zoom on it. Be patient, there is about 40k points represented.. " }
 
@@ -121,7 +123,7 @@ don$text <- paste("SNP: ", don$SNP, "\n", "-log10(P-val): ", round(-log10(don$P)
 
 p <- don %>% 
   filter(is_clump=="no") %>%
-  filter( P<0.01 ) %>%   # | SNP %in% sample(data$SNP, 150000) 
+  filter( P<0.001 ) %>%   # | SNP %in% sample(data$SNP, 150000) 
 
   ggplot( aes(x=BPcum, y=-log10(P), text=text)) +
     
@@ -154,7 +156,9 @@ ggplotly(p, tooltip = "text")
 
 
 
-##Loci {.tabset .tabset-fade .tabset-pills}
+# Detail of loci {.tabset .tabset-fade .tabset-pills}
+***
+
 There are 6 main associations:
 
 - **rs3755967**:  chromosome 4 ~ 73Mb | gene: GC | [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr4%3A71004093%2D72598593&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc) | Role = Vitamin D transport.
@@ -190,7 +194,9 @@ There are 6 main associations:
 
 
 
-##Clumping
+#Clumping
+***
+
 I run the [plink clumping algorithm](http://zzz.bwh.harvard.edu/plink/clump.shtml) on this GWAS summary statistics to have an insight of the unique association loci. Here are the clumping options I've used. Note: GWAS summary file must NOT be zipped.
 
 - **p1** is the Significance threshold for an association
@@ -235,12 +241,21 @@ cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/2_CLUMPING/result_GWAS_VitaminD_XiaEtAl_clumped  .
 ```
 
+Do I have my 6 loci after clumping?
+```{r}
+clump=read.table("0_DATA/result_GWAS_VitaminD_XiaEtAl_clumped", header=T)
+clump
+```
 
 
 
 
 
-##FUMA
+
+
+# FUMA
+***
+
 FUMA is a tool for functional mapping and annotation of genetic associations [ref](https://www.nature.com/articles/s41467-017-01261-5). A FUMA analysis of this GWAS sumstat has been run. The result is accessible [here](http://fuma.ctglab.nl/snp2gene/9871). 
 
 - Id: y.holtz@uq.edu.au 
@@ -260,7 +275,14 @@ A few thoughts on the FUMA analysis:
 --> These results are very weird, I need to investigate further why FUMA does not work properly.
 
 
-##About genes position
+
+
+
+
+
+
+# About genes position
+***
 
 - Xia et al. locate the SNP rs3755967 on chromosome 4, position 72,828,262 on their nature paper. I've read their publication several times, including supplementary data, but I didn't see any information concerning the HG version used. After my mail they revised their data and produced a new file, with position 72,609,398
 
@@ -274,6 +296,19 @@ A few thoughts on the FUMA analysis:
 
 
 
+
+
+# Summary table for paper
+***
+The goal is to build a table as table 2 in [Naomi R. Wray et al. 2018](https://www.nature.com/articles/s41588-018-0090-3).
+
+```{r}
+table <- merge(clump, data )
+
+
+data
+clump
+```
 
 
 

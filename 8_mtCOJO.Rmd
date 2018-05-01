@@ -51,18 +51,28 @@ cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO
 ls  /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bed | sed 's/.bed//' > mtcojo_mbfile.txt
 
 # Build mtcojo file. One per risk factor
+
+# BMI
 echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > list_of_trait_BMI.txt
 echo "BMI /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/height_giant_2014.txt" >> list_of_trait_BMI.txt
+tmp_command="gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait_BMI.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_BMI_result_vitaminD"
+qsubshcom "$tmp_command" 1 30G mtCOJO 10:00:00 ""
 
-# Build mtcojo file with all the risk factors
-...
+# SMOKE
+echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > list_of_trait_SMOKE.txt
+echo "SMOKE /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/ukbEUR_SI_cojo.txt" >> list_of_trait_SMOKE.txt
+tmp_command="gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait_SMOKE.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_SMOKE_result_vitaminD"
+qsubshcom "$tmp_command" 1 30G mtCOJO 10:00:00 ""
 
-# Send mCOJO
-tmp_command="gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_BMI_result_vitaminD"
+# ALL
+echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma" > list_of_trait_ALL.txt
+echo "BMI /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/height_giant_2014.txt" >> list_of_trait_ALL.txt
+echo "SMOKE /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/ukbEUR_SI_cojo.txt" >> list_of_trait_ALL.txt
+tmp_command="gcta64 --mbfile mtcojo_mbfile.txt --mtcojo-file list_of_trait_ALL.txt --ref-ld-chr eur_w_ld_chr/ --w-ld-chr eur_w_ld_chr/ --out mtcojo_ALL_result_vitaminD"
 qsubshcom "$tmp_command" 1 30G mtCOJO 10:00:00 ""
 ```
 
-I now have a new file called `mtcojo_result_vitaminD_result.mtcojo.cma` that is a GWAS summary statistics corrected for height.
+I now have a several files called `mtcojo_*_result_vitaminD_result.mtcojo.cma` that are a GWAS summary statistics for Vitamin-D corrected for all my Risk factors.
 
 
 
@@ -72,16 +82,23 @@ I now have a new file called `mtcojo_result_vitaminD_result.mtcojo.cma` that is 
 #- Run GSMR
 ***
 I can re run GSMR on this new GWAS summary statistics:
+
 ```{r, eval=FALSE}
+
+myRiskFact=$(echo "BMI")
+
 # Specific repo
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/
+mkdir GSMR_$myRiskFact
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR_$myRiskFact
 
 # Prepare a file that gives the location of every b-file (one per chromosome)
 ls /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*_v2_HM3_QC.bed | sed 's/.bed//' > gsmr_ref_data.txt
 
 # prepare a file that gives the link to the GWAS result for the risk factor = Vitamin D. After correction for risk factors
-cat /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/mtcojo_result_vitaminD_result.mtcojo.cma | cut -f1-8 > mtcojo_result_vitaminD_result.mtcojo.ma
-echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR/mtcojo_result_vitaminD_result.mtcojo.ma" > gsmr_exposure.txt
+cat /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/mtcojo_${myRiskFact}_result_vitaminD.mtcojo.cma | cut -f1-8 > file.ma
+a=$(pwd)
+echo "vitaminD $a/file.ma" > gsmr_exposure.txt
 
 # prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
 cp /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR/gsmr_outcome.txt .
@@ -91,21 +108,24 @@ split -l 1 --numeric-suffixes gsmr_outcome.txt
 for i in x0* ; do a=$(echo $i | sed 's/x0/x/') ; mv $i $a ; done
 
 # send an array of GSMR
-tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 0 --out gsmr_aftermtcojo_result_vitaminDXiaEtAl_{TASK_ID}"
+tmp_command="gcta64 --mbfile gsmr_ref_data.txt --gsmr-file gsmr_exposure.txt x{TASK_ID}  --gsmr-direction 0 --out gsmr_aftermtcojo${myRiskFact}_result_vitaminDXiaEtAl_{TASK_ID}"
 qsubshcom "$tmp_command" 1 30G mtCOJO_GSMR_array 10:00:00 "-array=1-72"
 
+
+
 # Once it's over, concatenate the results in a unique file
-cat gsmr_aftermtcojo_result_vitaminDXiaEtAl*gsmr | head -1 > gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr
-cat gsmr_aftermtcojo_result_vitaminDXiaEtAl*gsmr | grep -v "Exposure" >>  gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr
-rm *[0-9].gsmr x* *badsnps qsub*
+myRiskFact=$(echo "SMOKE")
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR_${myRiskFact}
+cat gsmr_aftermtcojo*gsmr | head -1 > gsmr_aftermtcojo${myRiskFact}_result_vitaminDXiaEtAl.gsmr
+cat gsmr_aftermtcojo*gsmr | grep -v "Exposure" >>  gsmr_aftermtcojo${myRiskFact}_result_vitaminDXiaEtAl.gsmr
+rm *[0-9].gsmr x* *badsnps qsub* *log
 ```
 
 Transfer the results locally for further analysis.
-
 ```{bash, eval=FALSE}
 # Then from locally to delta
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR/gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr .
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/8_MTCOJO/GSMR*/gsmr_aftermtcojo*_result_vitaminDXiaEtAl.gsmr .
 ```
 
 
@@ -115,43 +135,34 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 #- Result {.tabset}
 ***
 
-## BMI
+
+
 ```{r}
-# Read gsmr result after mtcojo
-gsmr=read.table("0_DATA/gsmr_aftermtcojo_result_vitaminDXiaEtAl.gsmr", header = T)
+# A function that format a gsmr result
+plot_primary <- function(file){
 
-# Show the information of GSMR withour mtCOJO
-before <- read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
-before <- before %>%
-    select(Outcome, bxy, p)
-colnames(before) <- c("Outcome", "bxy_before", "p_before")
+  # Read gsmr result after mtcojo
+  gsmr=read.table(file, header = T)
+  
+  # Show the information of GSMR withour mtCOJO
+  before <- read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
+  before <- before %>%
+      select(Outcome, bxy, p)
+  colnames(before) <- c("Outcome", "bxy_before", "p_before")
+  
+  # Merge
+  gsmr <- merge(gsmr, before, by.x="Outcome", by.y="Outcome", all.x=T)
+  
+  # Read the meaning of files:
+  meaning=read.table("0_DATA/list_of_traits_GSMR.csv", header=T, sep=",")
+  primary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main=="X") ] )
+  secondary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main!="X") ] )
+  
+  # Compute thresholds
+  thres_primary <- 0.05 / nrow(primary)
+  thres_secondary <- 0.05 / nrow(secondary)
 
-# Merge
-gsmr <- merge(gsmr, before, by.x="Outcome", by.y="Outcome", all.x=T)
-
-# Read the meaning of files:
-meaning=read.table("0_DATA/list_of_traits_GSMR.csv", header=T, sep=",")
-primary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main=="X") ] )
-secondary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main!="X") ] )
-
-# Compute thresholds
-thres_primary <- 0.05 / nrow(primary)
-thres_secondary <- 0.05 / nrow(secondary)
-
-```
-
-Note that our study takes `r nrow(gsmr)` traits into account. (`r nrow(primary)` primary traits and `r nrow(secondary)` traits)
-
-The following chart describes the effect sizes (bxy) of each primary traits: the effect of the risk factor on the disease. A few observation:
-
-- `r primary %>% filter(p<thres_primary) %>% nrow()` significant associations after multiple testing correction. 
-- `r primary %>% filter(p<thres_primary & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
-- `r primary %>% filter(p<thres_primary & bxy<0) %>% nrow()` have a negative effect size.
-
-
-
-```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO"}
-primary %>%
+  primary %>%
   arrange(bxy) %>%
   filter(!is.na(bxy) ) %>% 
   mutate(name=factor(Outcome, unique(Outcome))) %>%
@@ -168,19 +179,33 @@ primary %>%
     theme( panel.grid.major.y = element_line(size=0.1)) +
     ylab("Bxy (Effect size)") +
     xlab("")
-```
+}
 
 
-A few observation:
+plot_secondary <- function(file){
 
-- `r secondary %>% filter(p<thres_secondary) %>% nrow()` significant associations after multiple testing correction. 
-- `r secondary %>% filter(p<thres_secondary & bxy>0) %>% nrow()` of have a positive effect size: more Vitamin-D, more trait. 
-- `r secondary %>% filter(p<thres_secondary & bxy<0) %>% nrow()` have a negative effect size.
+  # Read gsmr result after mtcojo
+  gsmr=read.table(file, header = T)
+  
+  # Show the information of GSMR withour mtCOJO
+  before <- read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
+  before <- before %>%
+      select(Outcome, bxy, p)
+  colnames(before) <- c("Outcome", "bxy_before", "p_before")
+  
+  # Merge
+  gsmr <- merge(gsmr, before, by.x="Outcome", by.y="Outcome", all.x=T)
+  
+  # Read the meaning of files:
+  meaning=read.table("0_DATA/list_of_traits_GSMR.csv", header=T, sep=",")
+  primary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main=="X") ] )
+  secondary <- gsmr %>% filter( Outcome %in% meaning$Trait[ which(meaning$Main!="X") ] )
+  
+  # Compute thresholds
+  thres_primary <- 0.05 / nrow(primary)
+  thres_secondary <- 0.05 / nrow(secondary)
 
-
-
-```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO"}
-secondary %>%
+  secondary %>%
   arrange(bxy) %>%
   filter(!is.na(bxy) ) %>% 
   mutate(name=factor(Outcome, unique(Outcome))) %>%
@@ -197,11 +222,35 @@ secondary %>%
     theme( panel.grid.major.y = element_line(size=0.1)) +
     ylab("Bxy (Effect size)") +
     xlab("")
+}
+
+```
+
+## BMI
+
+**Primary traits**
+```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE}
+plot_primary("0_DATA/gsmr_aftermtcojoBMI_result_vitaminDXiaEtAl.gsmr")
+```
+
+**Secondary traits**
+```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO"}
+plot_secondary("0_DATA/gsmr_aftermtcojoBMI_result_vitaminDXiaEtAl.gsmr")
 ```
 
 
-
 ## Smoke
+
+**Primary traits**
+```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE}
+plot_primary("0_DATA/gsmr_aftermtcojoSMOKE_result_vitaminDXiaEtAl.gsmr")
+```
+
+**Secondary traits**
+```{r, fig.align="center", fig.height=6, fig.width=8, warning=FALSE, fig.cap="Figure: effect size (Bxy) of Vitamin D on all primary traits. Grey / orange / red points show significance of the causality. Blue lines show the standard error around the effect size. Black points shows the effect size before correction using mtCOJO"}
+plot_secondary("0_DATA/gsmr_aftermtcojoSMOKE_result_vitaminDXiaEtAl.gsmr")
+```
+
 
 ## Dark skin color
 

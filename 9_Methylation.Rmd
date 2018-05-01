@@ -17,3 +17,54 @@ library(DT)
 
 #- Method
 ***
+
+I'm gonna use the methylation data:
+```{r, eval=FALSE}
+
+# Methylation data are on delta:
+/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy
+```
+
+I run SMR on it, like I've done for eQTL data.
+
+
+
+
+
+#- ANDm description {.tabset}
+***
+
+
+
+
+
+
+
+#- Run SMR
+***
+The first step of SMR consists to run the algorythm on every significant mQTL (mQTL = significant relationship between a SNP allele and the methylation of a gene). For each gene involved in an mQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
+
+```{bash, eval=FALSE}
+# Good directory
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/9_METHYLATION
+
+# Run the analysis
+tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr{TASK_ID} --out smr_methyl_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
+qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
+
+# Concatenate chromosome results
+cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
+cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
+mv smr_VitaminDXiaEtAl.smr smr_VitaminDXiaEtAl_westra.smr
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_WESTRA_ET_AL/smr_VitaminDXiaEtAl_westra.smr  .
+```
+
+
+
+
+
+
+

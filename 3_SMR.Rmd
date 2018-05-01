@@ -8,6 +8,11 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 # A few library
 library(tidyverse)
 library(DT)
+
+# The biomaRt library allows to transform ensembL ids to gene names
+#source("https://bioconductor.org/biocLite.R")
+#biocLite("biomaRt")
+library(biomaRt)
 ```
 
 
@@ -80,7 +85,15 @@ A note on the eQTL format:
 ***
 ```{r}
 westra <- read.table("0_DATA/smr_VitaminDXiaEtAl_westra.smr", header=T)
+
+# Load SMR result
 eqtlgen <- read.table("0_DATA/smr_VitaminDXiaEtAl_eQTLGEN.smr", header=T)
+
+# Find out the genes IDs (ensemble IDs are provided with this dataset)
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+tmp <- getBM(filters= "ensembl_gene_id", attributes= c("ensembl_gene_id", "hgnc_symbol", "description"), values=eqtlgen$Gene, mart= mart)
+eqtlgen <- merge( eqtlgen, tmp, by.x="Gene", by.y="ensembl_gene_id", all.x=TRUE)
+
 gtex <- read.table("0_DATA/smr_VitaminDXiaEtAl_GTEXLiver.smr", header=T)
 ```
 

@@ -17,7 +17,7 @@ vitaminD	irondeficiencyanemias	-0.366523	0.242535	0.130733	16
 vitaminD	irritablebowelsyndrome	0.0452815	0.194076	0.815514	16
 vitaminD	maculardegeneration	0.396477	0.253169	0.117336	16
 vitaminD	osteoarthritis	0.170929	0.103235	0.0977763	16
-vitaminD	osteoporosis	0.0252605	0.190518	0.894519	15
+vitaminD	osteoporosis	0.0255615	0.190518	0.893269	16
 vitaminD	peripheralvasculardisease	0.196095	0.200642	0.328403	16
 vitaminD	pepticulcers	0.209879	0.266846	0.431564	16
 vitaminD	psychiatricdisorder	-0.184092	0.151564	0.224514	16
@@ -59,14 +59,14 @@ vitaminD	Redbloodcellcount	-0.0174335	0.0376674	0.643488	15
 vitaminD	Redcelldistributionwidth	0.0170343	0.0370052	0.645286	16
 vitaminD	Reticulocytecount	-0.0433608	0.0375952	0.248763	16
 vitaminD	Whitebloodcellcount	0.195381	0.0382997	3.37224e-07	15
-vitaminD	DepressiveSymptoms	0.0119417	0.0291421	0.681972	16
+vitaminD	DepressiveSymptoms	0.0147402	0.0294633	0.61687	15
 vitaminD	ICV	0.0185725	0.0889329	0.834575	16
 vitaminD	IQ	-0.0371213	0.0550347	0.499988	16
 vitaminD	IQ(UKB)	0.0445812	0.0349358	0.201925	16
-vitaminD	Neuroticism	0.0369513	0.0339547	0.276484	14
-vitaminD	Wellbeing(x2)	-0.00731353	0.0350211	0.834579	15
+vitaminD	Neuroticism	0.0332331	0.0342868	0.332411	13
+vitaminD	Wellbeing(x2)	-0.0117198	0.0351287	0.738662	15
 vitaminD	diastolicbloodpressure	-0.036713	0.046761	0.432383	14
 vitaminD	Dementia-Alzheimer	-0.142719	0.0745884	0.055694	16
 vitaminD	Parkinson	-0.115219	0.21208	0.586937	16
 vitaminD	Height	0.121845	0.0304219	6.19717e-05	14
-vitaminD	EduYear	-0.00277613	0.0269054	0.917819	16
+vitaminD	EduYear	-0.00672155	0.026975	0.803224	16

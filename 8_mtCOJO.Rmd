@@ -147,7 +147,7 @@ plot_primary <- function(file){
   # Show the information of GSMR withour mtCOJO
   before <- read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
   before <- before %>%
-      select(Outcome, bxy, p)
+      dplyr::select(Outcome, bxy, p)
   colnames(before) <- c("Outcome", "bxy_before", "p_before")
   
   # Merge
@@ -190,7 +190,7 @@ plot_secondary <- function(file){
   # Show the information of GSMR withour mtCOJO
   before <- read.table("0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr", header = T)
   before <- before %>%
-      select(Outcome, bxy, p)
+      dplyr::select(Outcome, bxy, p)
   colnames(before) <- c("Outcome", "bxy_before", "p_before")
   
   # Merge

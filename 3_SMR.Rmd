@@ -4,19 +4,24 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 <br><br>
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-# A few library
-library(tidyverse)
-library(DT)
 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 # The biomaRt library allows to transform ensembL ids to gene names
 #source("https://bioconductor.org/biocLite.R")
 #biocLite("biomaRt")
 library(biomaRt)
+
+# A few library
+library(tidyverse)
+library(DT)
+library(hrbrthemes)
+library(plotly)
 ```
 
 
->This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the vitamin-D GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `SMR` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download).
+
+
+>This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the vitamin-D GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `SMR` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download). We first run SMR using the eQTLgen dataset. We then confirmed our results on the [GTEx dataset](https://www.gtexportal.org/home/) in different tissue.
 
 
 
@@ -60,12 +65,12 @@ To run SMR several datasets are required:
 
 - **bfile**: individual-level SNP genotype data. I'm gonna use the HapMap3 data set: `/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr` in delta.
 - **gwas-summary**: the summary statistic of the vitamin-D GWAS of Xia et al. Must be in the 'ma' format. File will be: `/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma`
-- **beqtl-summary**: eQTL summary data. Describes the link between SNPs and gene expression. Several source of information are available:
+- **beqtl-summary**: eQTL summary data. Describes the link between SNPs and gene expression.
 
-    - [Westra et al.](https://www.ncbi.nlm.nih.gov/pubmed/24013639). Downloaded from [here](http://cnsgenomics.com/software/smr/#Download). Available on delta here: `/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_WESTRA`. This is the first eQTL data I've tried.
-    - [32K eQTLGen cis-eQTL](). Not published yet. Data based on n=32K. Provided via Annique by mail and available on delta here: `/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K`.
-    - [GTExV7 Liver](). eQTL dataset based on liver gene expression data. Available on Delta at `/gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver*`.
 
+We used the [32K eQTLGen cis-eQTL]() dataset as discovery dataset. Not published yet. This dataset has been provided by Annique after consurtium authorization. It is abvailable on Delta here: `/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K`.  
+
+We then used the GTExV7 eQTL dataset as a validation dataset. Several tissues were considered: Liver, Blood, and Brain. These datasets are also available on Delat: `/gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/`
 
 A note on the eQTL format:
 
@@ -73,6 +78,12 @@ A note on the eQTL format:
 - the `.esi` file gives the list of all the involved SNP, with name, chromosome, position and allele.
 - the `.besd`is compressed and display all the association between SNP and probe.
 
+A note on the GTEx dataset: very well described [here](https://www.gtexportal.org/home/tissueSummaryPage).  
+
+- Liver: 175 samples
+- Kidney: 45 samples
+- Whole Blood: 407 samples
+- Brain: several different tissues with sample size between 88 and 173
 
 
 
@@ -80,12 +91,11 @@ A note on the eQTL format:
 
 
 
-
-#- eQTL Description {.tabset}
+#- discovery eQTL dataset description {.tabset}
 ***
-```{r}
-westra <- read.table("0_DATA/smr_VitaminDXiaEtAl_westra.smr", header=T)
 
+The discovery eQTL dataset is the eQTLGen dataset. Gene names are provided using Ensembl IDs, so I use the biomaRt library to get the real gene names:
+```{r, cache=TRUE}
 # Load SMR result
 eqtlgen <- read.table("0_DATA/smr_VitaminDXiaEtAl_eQTLGEN.smr", header=T)
 
@@ -93,16 +103,10 @@ eqtlgen <- read.table("0_DATA/smr_VitaminDXiaEtAl_eQTLGEN.smr", header=T)
 mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
 tmp <- getBM(filters= "ensembl_gene_id", attributes= c("ensembl_gene_id", "hgnc_symbol", "description"), values=eqtlgen$Gene, mart= mart)
 eqtlgen <- merge( eqtlgen, tmp, by.x="Gene", by.y="ensembl_gene_id", all.x=TRUE)
-
-gtex <- read.table("0_DATA/smr_VitaminDXiaEtAl_GTEXLiver.smr", header=T)
 ```
 
 
-A summary of what we have in the eQTL data:
-
-- **`r nrow(westra)` eQTLs** (association between probe and gene expression) are available in the Westra westraset. This concerns `r length(unique(westra$probeID))` unique probes, `r length(unique(westra$Gene))` unique genes and `r length(unique(westra$topSNP))` SNPs spread in `r length(unique(westra$ProbeChr))` chromosomes.
-- **`r nrow(eqtlgen)` eQTLs** (association between probe and gene expression) are available in the eqtlgen eqtlgenset. This concerns `r length(unique(eqtlgen$probeID))` unique probes, `r length(unique(eqtlgen$Gene))` unique genes and `r length(unique(eqtlgen$topSNP))` SNPs spread in `r length(unique(eqtlgen$ProbeChr))` chromosomes.
-- **`r nrow(gtex)` eQTLs** (association between probe and gene expression) are available in the gtex gtexset. This concerns `r length(unique(gtex$probeID))` unique probes, `r length(unique(gtex$Gene))` unique genes and `r length(unique(gtex$topSNP))` SNPs spread in `r length(unique(gtex$ProbeChr))` chromosomes.
+**`r nrow(eqtlgen)` eQTLs** are provided: association between probe and gene expression. This concerns `r length(unique(eqtlgen$probeID))` unique probes, `r length(unique(eqtlgen$Gene))` unique genes and `r length(unique(eqtlgen$topSNP))` SNPs spread in `r length(unique(eqtlgen$ProbeChr))` chromosomes.
 
 <br><br>
 Can we have a look to the existing eQTL in the GWAS hit regions?
@@ -112,79 +116,28 @@ Can we have a look to the existing eQTL in the GWAS hit regions?
 
 
 ## GC | chr4
-Do we have eQTL in the region of the GC gene? Between 71 and 74 Mb ?
-
-- Westra: an eQTL for the gene RUFY3
-- eQTLGen: 5 eQTL. ENSG00000080493 = SLC4A4 = gene just before GC. But controled by SNP rs12330929 that is NOT in our vitaminD hit area.
-- gtex: nothing
-
-**Conclusion**: we have **NO chance** to detect GC as associated in this SMR analysis.
-
+There are 5 eQTL in the region of the GC gene = on chromosome 4 between 71 and 74 Mb. However the GC gene itself is **NOT** involved. The gene SLC4A4 nearby is controled by the SNP rs12330929 that is NOT in our vitaminD hit area. We have **NO chance** to detect GC as associated in this SMR analysis.
 <br>
-
-Detail westra:
-```{r}
-westra %>% 
-  filter(topSNP_chr==4) %>%
-  filter(topSNP_bp>71000000 & topSNP_bp<74000000)
-```
-
-Detail eQTLGen:
 ```{r}
 eqtlgen %>% 
   filter(topSNP_chr==4) %>%
-  filter(topSNP_bp>71000000 & topSNP_bp<73000000)
+  filter(topSNP_bp>71000000 & topSNP_bp<73000000) %>%
+  dplyr::select(hgnc_symbol, description, ProbeChr, Probe_bp, topSNP, topSNP_bp, A1, A2, Freq, p_eQTL)
 ```
 
-Detail gtex:
-```{r}
-gtex %>% 
-  filter(topSNP_chr==4) %>%
-  filter(topSNP_bp>71000000 & topSNP_bp<74000000)
-```
+
 
 
 
 
 
 ## CYP2R1 | chr11 | ~15 Mb
-Do we have eQTL in the region of the CYP2R1 gene? Between 14 and 15.5 Mb ?
-
-- Westra: 3 eQTLs: for COPB1, PDE3B and INSC.
-- eQTLGen: 5 eQTL: for RRAS2, COPB1, PDE3B, **CYP2R1** and INSC. CYP2R1 is our candidate gene since the top hit SNP is in this gene
-- gtex: 1 eQTl: SPON1, but far before our QTL.
-
-**Conclusion**: we have a chance to detect something with SMR.
-
-Detail westra:
-```{r}
-westra %>% 
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>14000000 & topSNP_bp<15500000)
-```
-
-
-Detail eQTLGen:
+There are 5 eQTL in the region of the CYP2R1 gene = Between 14 and 15.5 Mb on chromosome 11. They concern the genes RRAS2, COPB1, PDE3B, **CYP2R1** and INSC. CYP2R1 is our candidate gene since the top hit SNP is in this gene
 ```{r}
 eqtlgen %>% 
   filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>14000000 & topSNP_bp<15500000)
-```
-Note:
-
-- ENSG00000133818 = RRAS2
-- ENSG00000129083 = COPB1
-- ENSG00000152270 = PDE3B
-- ENSG00000186104 = CYP2R1 --> our main target! controled by SNP rs2060793
-- ENSG00000188487 = INSC (Just after the famous CYP2R1)
-
-
-
-Detail gTEX:
-```{r}
-gtex %>% 
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>14000000 & topSNP_bp<15500000)
+  filter(topSNP_bp>14000000 & topSNP_bp<15500000) %>%
+  dplyr::select(hgnc_symbol, description, ProbeChr, Probe_bp, topSNP, topSNP_bp, A1, A2, Freq, p_eQTL)
 ```
 
 
@@ -192,40 +145,19 @@ gtex %>%
 
 ## NADSYN1 / DHCR7 | chr11 | ~71 Mb
 
-Do we have eQTL in the region of the DHCR7 gene? Between 70 and 72 Mb ?
+There are 4 eQTL in the region of the DHCR7 gene = Between 70 and 72 Mb on chromosome 11. Genes concerned are DHCR7, AP002387.1, NADSYN1, FAM86C1. Our target are here.
 
-- Westra: 3 eQTLs: for IL18BP, NUMA1, C11ORF59 but I don't get it cause this genes are not in the LocusZoom figure
-- eQTLGen: 4 eQTL: for DHCR7, AP002387.1, NADSYN1, FAM86C1. Exactly our targets!
-- gtex: 1 eQTl: PPFIA1 and RP11-660L16.2
-
-
-Detail westra:
 ```{r}
-westra %>% 
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>70800000 & topSNP_bp<71500000)
-```
+# One gene is missing in biomaRt
+eqtlgen[which(eqtlgen$Gene=="ENSG00000254682") , "hgnc_symbol"] <- "AP002387.2"
 
-
-Detail eQTLGen:
-```{r}
 eqtlgen %>% 
   filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>70800000 & topSNP_bp<71500000)
+  filter(topSNP_bp>70800000 & topSNP_bp<71500000) %>%
+  dplyr::select(hgnc_symbol, description, ProbeChr, Probe_bp, topSNP, topSNP_bp, A1, A2, Freq, p_eQTL)
 ```
 
-ENSG00000172893 = DHCR7
-ENSG00000254682 = AP002387.1
-ENSG00000172890 = NADSYN1
-ENSG00000158483 = FAM86C1
 
-
-Detail GTEX:
-```{r}
-gtex %>% 
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>70000000 & topSNP_bp<73000000)
-```
 
 
 
@@ -244,32 +176,15 @@ gtex %>%
 
 
 
-#- Run SMR
+
+
+
+
+#- Run SMR on discovery dataset
 ***
-The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
+The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.  
 
-**On Westra et al. eQTL data**
-```{bash, eval=FALSE}
-# Good directory
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_WESTRA_ET_AL
-
-# Run the analysis
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
-qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
-
-# Concatenate chromosome results
-cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
-cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
-mv smr_VitaminDXiaEtAl.smr smr_VitaminDXiaEtAl_westra.smr
-
-# Transfer locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_WESTRA_ET_AL/smr_VitaminDXiaEtAl_westra.smr  .
-```
-
-
-
-**On eQTLGen 32k data**
+This work is done on the eQTLGen 32k dataset:
 ```{bash, eval=FALSE}
 # Good directory
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_EQTLGEN_32K
@@ -290,24 +205,6 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 
 
 
-**On GTEX Liver data**
-```{bash, eval=FALSE}
-# Good directory
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX_LIVER
-
-# Run the analysis
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver --out smr_VitaminDXiaEtAl_{TASK_ID} --thread-num 1"
-qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
-
-# Concatenate chromosome results
-cat smr_VitaminDXiaEtAl_*smr | head -1 > smr_VitaminDXiaEtAl.smr
-cat smr_VitaminDXiaEtAl_*smr | grep -v "^probeID" >> smr_VitaminDXiaEtAl.smr
-mv smr_VitaminDXiaEtAl.smr smr_VitaminDXiaEtAl_GTEXLiver.smr
-
-# Transfer locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX_LIVER/smr_VitaminDXiaEtAl_GTEXLiver.smr  .
-```
 
 
 
@@ -317,91 +214,31 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 
 
 
-#- Result overview{.tabset}
+
+# Result {.tabset}
 ***
 
-
-
-For each eQTL association, we run an SMR test. The SMR p-value threshold taking into account multiple testing is 0.05 divided by the number of SMR test. It is thus `r 0.05/nrow(westra)` for Westra.  
-
-The number of signiificant SMR association is :
-
-- `r westra %>% filter(p_SMR < (0.05 / nrow(westra)) ) %>% nrow()` for westra
-- `r eqtlgen %>% filter(p_SMR < (0.05 / nrow(eqtlgen)) ) %>% nrow()` for eQTLGen
-- `r gtex %>% filter(p_SMR < (0.05 / nrow(gtex)) ) %>% nrow()` for GTEX Liver
-
-
-
-
-
-
-
-
-# Result per eQTL data {.tabset}
-***
-
-##Westra
-
-Only **one causal association** detected: 
+The SMR threshold used in our study takes into account multiple testing. It is thus 0.05 / # of test. `r eqtlgen %>% filter(p_SMR < (0.05 / nrow(eqtlgen)) ) %>% nrow()` have been detected by SMR. Here is their detail:
 
 ```{r}
-westra %>% filter(p_SMR < (0.05 / nrow(westra)) )
+thres <- (0.05 / nrow(eqtlgen))
+eqtlgen %>% filter(p_SMR < thres )
 ```
 
-The probe ILMN_2131381 (14,84 Mb) that represents the genes PDE3B (full name = [phosphodiesterase 3B](https://www.ncbi.nlm.nih.gov/gene/5140)) has a causal effect on VitaminD (pSMR < 10e-8). The instrument used to determine this association is the snp rs12283049 (14,65 Mb). Here is a zoom on the chromosome 11 around 15Mb where this association takes place.  
+Three associations are located at 2 regions detected in the GWAS analysis.
 
-```{bash, eval=FALSE}
-# Good folder
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR
+- on chromosome 11 ~ 15Mb, 
+- on chromosome 11 ~ 71 MB. 
 
-# Load the position of genes:
-wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
+Three models are consistent with a significant association from the SMR test using only a single genetic variant. These models are **causality** (Z - > X - > Y), **pleiotropy** (Z ->X and Z ->Y), and **linkage** (Z1->X, Z2->Y, and Z1 and Z2 are in LD). I used the heterogeneity in dependent instruments (**HEIDI**) test proposed by Zhu et al. to detect the linkage situation that is of less biological interest.
 
-# Send smr plot for this loci
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /shares/compbio/Group-Wray/YanHoltz/BLOOD_GWAS/5_SMR/eQTL_DATA_WESTRA/westra_eqtl_hg18 --out myplot --plot --probe ILMN_2131381	 --probe-wind 500 --gene-list /shares/compbio/Group-Wray/YanHoltz/BLOOD_GWAS/5_SMR/glist-hg18"
-qsubshcom "$tmp_command" 1 30G smr_plot_vitaminD_loc1 10:00:00 ""
-
-# transfer locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/plot/myplot*  .
-```
-
-```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9, fig.cap="Figure: SMR Result at the PDE3B locus for VitaminD. Top plot, brown brown dots represent the P values for SNPs from the GWAS analysis of Xia et al.. Diamonds represent the P values for probes from the SMR test. Bottom plot, the eQTL P values of SNPs from the Westra study for the ILMN_2131381 probe tagging PDE3B. The top and the bottom plots include all the SNPs available in the region in the GWAS ad eQTL summary data, respectivly, rather than only the SNPs common o both data sets. Highlighted in red is the gene PDE3B that passed the SMR test but not the HEIDI test."}
-# Make the plot
-source("SCRIPT/plot_SMR.r") 
-# Read the data file in R:
-SMRData = ReadSMRData("0_DATA/myplot.ILMN_2131381.txt")
-# Plot the SMR results in a genomic region centred around a probe:
-SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
-```
-
-This association is **directly related** with a gene described by Xia et al. (snp rs10741657 in the gene CYP2R1 in the same area). It is of interest that the genes PDE3B and CYP2R1 are really close one to each other (See the locus zoom figure above). The gene CYP2R1 is not involved in any eQTL tough. The only other eQTLs available in this region concern the genes COPB1 and INSC, that are not significantly causal for vitaminD.
-
-```{r, fig.align="center", fig.width=7, fig.height=5}
-SMREffectPlot(data=SMRData, trait_name="VitaminD") 
-```
-
-
-
-
-
-
-
-
-
-
-
-##eQTLGen
-6 causal association have been detected:
-```{r}
-eqtlgen %>% filter(p_SMR < (0.05 / nrow(eqtlgen)) )
-```
-
-Three probes are on chromosome 11 ~ 15Mb, three others on chromosome 11 ~ 71 MB. These are the 2 regions detected in the GWAS analysis.
+Only the gene DHCR7 passed the HEIDI test and can thus be considered as causal on VitaminD.
 
 Here is the diagram showing the organization of these 2 SMR regions:
 
-**Locus ~ 15 Mb**
+
+
+## Locus ~ 15 Mb
 ```{bash, eval=FALSE}
 # Good folder
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_EQTLGEN_32K
@@ -431,7 +268,7 @@ SMRData = ReadSMRData("0_DATA/myplot.ENSG00000152270.txt")
 SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
 ```
 
-**Locus ~ 71 Mb**
+## Locus ~ 71 Mb
 ```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9}
 # Make the plot
 source("SCRIPT/plot_SMR.r") 
@@ -442,190 +279,152 @@ SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000
 ```
 
 
-
-It is important to note that the gene names used in the  eQTLGEN data are different from the GWAS. Using Ensembl database it is possible to make the link between both names:
-
-- ENSG00000133818 is RRAS2
-- ENSG00000152270 is PDE3B
-- ENSG00000186104 is CYP2R1
-
-- ENSG00000172893 is DHCR7
-- ENSG00000254682 is AP002387.1 
-- ENSG00000172890 is NADSYN1
-
-
-
-
-
-
-
-##GTEX Liver
-2 causal associations have been detected:
+Do we have other association under pval=0.01 but that did not survive multiple testing correction in this area:
 ```{r}
-gtex %>% filter(p_SMR < (0.05 / nrow(gtex)) )
+eqtlgen %>% 
+  filter(p_SMR < 0.01) %>%
+  filter(p_SMR > (0.05 / nrow(eqtlgen)) ) %>%
+  arrange(ProbeChr, as.numeric(as.character(Probe_bp)))
 ```
 
-Once more the 2 regions of the chromosome 11 are highlighted: around 15 Mb and around 71 Mb. This time, it's the genes SPON1 and RP11-66L16.2 that are found has having a causal effect on VitaminD. The gene SPON1 is located a bit before GWAS highlighted region (14.1 Mb vs 14.9 Mb). 
 
-Note: the gene RP11-660L16.2 = ENSG00000254682 = AP002387.1
+
+
+
+
+
+
+
+
+
+
+#- Run SMR on validation dataset {.tabset}
+***
+
+To replicate the SMR associations in a wider range of tissues relevant to VitaminD, we performed SNP analyses based on cis-eQTL data from several tissues in GTEx: 
+
+- Liver
+- Whole blood, 
+- Brain (13 different tissues)
 
 ```{bash, eval=FALSE}
-# Good folder
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX_LIVER
+# Good directory
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX
 
-# Load the position of genes:
-wget https://www.cog-genomics.org/static/bin/plink/glist-hg18
+# Run the analysis on several tissues:
+for i in $(echo Liver Whole_Blood Brain_Amygdala Brain_Anterior_cingulate_cortex_BA24 Brain_Caudate_basal_ganglia Brain_Cerebellar_Hemisphere Brain_Cerebellum Brain_Cortex Brain_Frontal_Cortex_BA9 Brain_Hypothalamus Brain_Hippocampus Brain_Nucleus_accumbens_basal_ganglia Brain_Putamen_basal_ganglia Brain_Spinal_cord_cervical_c-1 Brain_Substantia_nigra ) ; do
+  echo $i
+  tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/${i} --out smr_VitaminDXiaEtAl_GTEX${i}_{TASK_ID} --thread-num 1"
+  qsubshcom "$tmp_command" 1 30G smr_VitaminD 10:00:00 "-array=1-22"
+done
 
-# Send smr plot for this loci (first of chromosome 11)
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver --out myplot --plot --probe ENSG00000152268.8	 --probe-wind 500 --gene-list /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_EQTLGEN_32K/glist-hg18"
-qsubshcom "$tmp_command" 1 30G smr_plot_vitaminD_loc1 10:00:00 ""
+# Concatenate chromosome results
+cat smr_VitaminDXiaEtAl_GTEX*smr | head -1 | awk '{print "dataset",$0}' > res_smr_VitaminDXiaEtAl_GTEX.smr
+for i in $(echo Liver Whole_Blood Brain_Amygdala Brain_Anterior_cingulate_cortex_BA24 Brain_Caudate_basal_ganglia Brain_Cerebellar_Hemisphere Brain_Cerebellum Brain_Cortex Brain_Frontal_Cortex_BA9 Brain_Hypothalamus Brain_Hippocampus Brain_Nucleus_accumbens_basal_ganglia Brain_Putamen_basal_ganglia Brain_Spinal_cord_cervical_c-1 Brain_Substantia_nigra ) ; do
+  echo $i
+  cat smr_VitaminDXiaEtAl_GTEX${i}*smr | grep -v "^probeID" | awk -v a="$i" '{print a,$0}' >> res_smr_VitaminDXiaEtAl_GTEX.smr
+done
 
-# Send smr plot for this loci (Second of chromosome 11)
-tmp_command="smr_Linux --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC --gwas-summary /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma --beqtl-summary /gpfs/gpfs01/polaris/Q0286/GTExV7/Summary/besd/Liver --out myplot --plot --probe ENSG00000254682.1	 --probe-wind 500 --gene-list /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_EQTLGEN_32K/glist-hg18"
-qsubshcom "$tmp_command" 1 30G smr_plot_vitaminD_loc1 10:00:00 ""
+# Clean
+rm smr* qsub*
 
-# transfer locally
+# Transfer locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX_LIVER/plot/*  .
-```
-
-```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9}
-# Make the plot
-source("SCRIPT/plot_SMR.r") 
-# Read the data file in R:
-SMRData = ReadSMRData("0_DATA/myplot.ENSG00000152268.8.txt")
-# Plot the SMR results in a genomic region centred around a probe:
-SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
+scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/5_SMR/ON_GTEX/res_smr_VitaminDXiaEtAl_GTEX.smr  .
 ```
 
 
 
+The following figure represent all the genes being involved in at least 1 eQTL, for the zone of interest. 
 
+- Gene names are displayed on the X axis. 
+- The SMR p-value is displayed on the Y axis. 
+- Point color denotes the eQTL tissue. 
+- Point shape: dot if SMR and HEIDI tests are OK, '+' otherwise.
+- Hover points for more info like the HEIDI p-value. 
+- The significant threshold is calculated on the eQTLgen dataset with multiple testing correction.
 
-```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9}
-# Make the plot
-source("SCRIPT/plot_SMR.r") 
-# Read the data file in R:
-SMRData = ReadSMRData("0_DATA/myplot.ENSG00000254682.1.txt")
-# Plot the SMR results in a genomic region centred around a probe:
-SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
+Note and observation:
+  - It looks like AP002387.2, RP11-660L16.2 and NADSYN1 are [more or less the same gene](https://lncipedia.org/db/transcript/lnc-NADSYN1-1:2)?
+  - Brain related tissues give a strong signal for the genes KRTAP** that are keratin associated protein.
+
+```{r, fig.align="center", fig.width=10, fig.height=12}
+data=read.table("0_DATA/res_smr_VitaminDXiaEtAl_GTEX.smr", header=T)
+
+# Add the eQTLGen results
+eqtlgen$dataset <- "eqtlgen"
+eqtlgen$Gene <- eqtlgen$hgnc_symbol
+eqtlgen <- eqtlgen[ , c(  24, 1:21) ]
+data <- rbind(data, eqtlgen)
+
+# Show all the relationships
+tmp <- data %>% 
+  filter( (ProbeChr==20 & Probe_bp>50500000 & Probe_bp<54000000) | (ProbeChr==4 & Probe_bp>70500000 & Probe_bp<75000000) | (ProbeChr==11 & Probe_bp>13500000 & Probe_bp<16500000) |  (ProbeChr==11 & Probe_bp>70500000 & Probe_bp<71800000)  ) %>%
+  mutate( ProbeChr=paste("Chromosome ", ProbeChr, sep="")) %>%
+  mutate( ProbeChr=ifelse(ProbeChr=="Chromosome 11" & Probe_bp<16500000, "Chromosome 11 (~15Mb)", ProbeChr)) %>%
+  mutate( group=ifelse(dataset=="eqtlgen", "eqtlgen", ifelse( dataset=="Liver", "Liver", ifelse(dataset=="Whole_Blood", "whole blood", "brain") ))) %>%
+  arrange(ProbeChr, Probe_bp) %>%
+  mutate( Gene=factor(Gene, unique(Gene))) %>% 
+  mutate(text = paste("Gene: ", Gene, "\n", "Tissue: ", dataset, "\n", "Position: ", Probe_bp, "\n", "SMR pvalue: ", p_SMR, "\n", "HEIDI p-value: ", p_HEIDI)) %>%
+  mutate(myshape = ifelse(p_SMR<thres & p_HEIDI>0.05, "a", "b"))
+  
+p <- tmp %>%  ggplot( aes(x=Gene, y=-log10(p_SMR), color=group, text=text) ) +
+    geom_point( shape=ifelse(tmp$p_SMR<thres & tmp$p_HEIDI>0.05, 16, 43)) +
+    scale_color_manual( values=c("skyblue", "black", "orange", "forestgreen") ) +
+    theme_ipsum() +
+    facet_wrap(~ ProbeChr, ncol=1, scale="free_x") +
+    theme(
+      axis.text.x=element_text(angle=45, hjust=1),
+      panel.spacing = unit(0.1, "lines"),
+      panel.grid.major.y = element_blank(),
+    ) +
+  geom_hline(yintercept = -log10(thres), color="orange") +
+  guides(shape=FALSE)
+
+ggplotly(p, tooltip="text")
 ```
 
 
 
+Do I have a good correlation between eQTLgen and GTEx whole blood?
 
-# HEIDI test
-***
-Three models are consistent with a significant association from the SMR test using only a single genetic variant. These models are **causality** (Z - > X - > Y), **pleiotropy** (Z ->X and Z ->Y), and **linkage** (Z1->X, Z2->Y, and Z1 and Z2 are in LD). I used the heterogeneity in dependent instruments (**HEIDI**) test proposed by Zhu et al. to detect the linkage situation that is of less biological interest.
+## General
+```{r, fig.align="center", fig.width=9, fig.height=8}
+p <- data %>%
+  filter(dataset %in% c("Whole_Blood", "eqtlgen")) %>%
+  dplyr::select(Gene, dataset, p_SMR) %>%
+  arrange(Gene) %>%
+  filter(Gene!="") %>% 
+  filter(! Gene %in% c("LINC01422","LINC02356", "LINC01481")) %>%
+  tidyr::spread(dataset, p_SMR) %>%
+  na.omit() %>%
+  mutate(text=paste("Gene: ", Gene, "\n", "SMR pVal in eQTLgen: ", eqtlgen, "\n", "SMR pVal in GTEx: ", Whole_Blood)) %>%
+  ggplot( aes(x=Whole_Blood, y=eqtlgen, text=text )) +
+    geom_point() +
+    theme_ipsum()
 
-What are the association that pass both the SMR test and the HEIDI test?
-
-- Westra
-```{r}
-westra %>% 
-  filter(p_SMR < (0.05 / nrow(westra)) ) %>%
-  filter(p_HEIDI>=0.05)
-```
-
-- eQTLGen: the gene DHCR7 is causal
-```{r}
-eqtlgen %>% 
-  filter(p_SMR < (0.05 / nrow(eqtlgen)) ) %>%
-  filter(p_HEIDI>=0.05)
-```
-
-- GTEX Liver
-```{r}
-gtex %>% 
-  filter(p_SMR < (0.05 / nrow(gtex)) ) %>%
-  filter(p_HEIDI>=0.05)
+ggplotly(p, tooltip="text")
 ```
 
 
+## Focus on small pval
+```{r, fig.align="center", fig.width=9, fig.height=8}
+p <- data %>%
+  filter(dataset %in% c("Whole_Blood", "eqtlgen")) %>%
+  filter(p_SMR<0.05) %>%
+  dplyr::select(Gene, dataset, p_SMR) %>%
+  arrange(Gene) %>%
+  filter(Gene!="") %>% 
+  filter(! Gene %in% c("LINC01422","LINC02356", "LINC01481")) %>%
+  tidyr::spread(dataset, p_SMR) %>%
+  na.omit() %>%
+  mutate(text=paste("Gene: ", Gene, "\n", "SMR pVal in eQTLgen: ", eqtlgen, "\n", "SMR pVal in GTEx: ", Whole_Blood)) %>%
+  ggplot( aes(x=-log10(Whole_Blood), y=-log10(eqtlgen), text=text )) +
+    geom_point() +
+    theme_ipsum()
 
-
-
-
-
-
-
-#- Detail of the chromosome 11 ~15Mb {.tabset}
-***
-
-Can we check what happend in the chromosome 11 area without multiple testing correction? Do we find new associations
-
-## Westra
-Only One association already described before
-```{r}
-westra %>% 
-  filter(p_SMR < 0.05) %>%
-  filter(p_SMR > (0.05 / nrow(westra)) ) %>%
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>11000000 & topSNP_bp<19000000)
+ggplotly(p, tooltip="text")
 ```
-
-
-## eQTLGEN
-6 associations are under 0.05 but did not survive multiple testing correction in this area:
-```{r}
-eqtlgen %>% 
-  filter(p_SMR < 0.05) %>%
-  filter(p_SMR > (0.05 / nrow(eqtlgen)) ) %>%
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>11000000 & topSNP_bp<19000000)
-```
-Equivalence: 
-
--ENSG00000251381 = LINC00958  
--ENSG00000188487 = INSC (Just after the famous CYP2R1) --- Heidi test OK  
--ENSG00000166689 = PLEKHA7 --- Heidi test OK  
--ENSG00000011405 = PIK3C2A --- Heidi test OK  
--ENSG00000070081 = NUCB2 --- Heidi test OK  
--ENSG00000260196 = AC124798.1  
-
-
-## GTEX Liver
-Nothing new
-```{r}
-gtex %>% 
-  filter(p_SMR < 0.05) %>%
-  filter(p_SMR > (0.05 / nrow(gtex)) ) %>%
-  filter(topSNP_chr==11) %>%
-  filter(topSNP_bp>11000000 & topSNP_bp<19000000)
-```
-
-
-
-
-
-
-
-#- Whole SMR result {.tabset}
-***
-
-##Westra
-A list of all the result is available here:
-```{r, message=FALSE, warning=FALSE}
-datatable(westra, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
-```
-
-##eQTLGen
-A list of all the result is available here:
-```{r, message=FALSE, warning=FALSE}
-datatable(eqtlgen, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
-```
-
-##GTEX
-A list of all the result is available here:
-```{r, message=FALSE, warning=FALSE}
-datatable(gtex, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
-```
-
-
-
-
-
-
 
 
 
@@ -643,28 +442,84 @@ datatable(gtex, rownames = FALSE, filter="top", options = list(pageLength = 5, s
     - **rs8018720**:  chromosome 14 ~ 38Mb | gene: SEC23A| [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr14%3A39086731%2D39087231&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc)
     - **rs17216707**: chromosome 20 ~ 52Mb | gene: CYP24A1| [Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr20%3A51610823%2D56620822&hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc) | Role = Catabolism.  <br>
     
+<br><br>
 
 - Some of these genes are clearly involved in the VitaminD Pathway described by [Manousaki et al.](https://www.sciencedirect.com/science/article/pii/S000292971730277X)
 ![](IMG/VitaminD_Pathway.png)
 
-- SMR provides more insight about the putative underlyng genes of each region.
+<br>
 
-- **Chromosome 11 ~14MB region**:
+- The [gene GC](https://www.ncbi.nlm.nih.gov/gene/2638) is not involved in any eQTL in any dataset. This is surprising since it carries the SNP with the biggest effect on the GWAS. This gene is a Vitamin D binding protein. It allws to transport the vitamin D.
 
-    - The [gene CYP2R1](https://en.wikipedia.org/wiki/CYP2R1) was expected to be causal for vitaminD concentration. Indeed this genes encodes for the **cy**tochrome **P**450 **2R1**, which is the Vitamin D 25-hydroxylase. This gene is indeed detected as causal using the eQTLGen 32K dataset. A low frequency SNP on this gene has a strong effect on VitaminD ([paper](https://www.sciencedirect.com/science/article/pii/S000292971730277X))
-    
-    - The [gene PDE3B](https://en.wikipedia.org/wiki/Phosphodiesterase_3) next to it is detected using 2 different eQTL dataset. It is a phosphodiesterase. It has a role in regulating heart muscle, vascular smooth muscle and platelet aggregation. This gene is [not expressed in Liver](https://en.wikipedia.org/wiki/Phosphodiesterase_3), what can explain that it has not been detected using the GTEX dataset. Possible link with obesity and diabetes. Why is this gene detected by GSMR?
-    
-    -The gene RRAS2 is detected using the eQTLGen dataset only. The gene SPON1 is detected in Liver. But nothing else to say about it...
+- The gene [DHCR7](https://ghr.nlm.nih.gov/gene/DHCR7) is detected as causal by SMR and HEIDI tests. However, no eQTL is detected for this gene in GTEx datasets. DHCR7 is a 7-dehydrocholesterol reductase: it is involved in the cholesterol pathway.
+
+- The [gene CYP2R1](https://en.wikipedia.org/wiki/CYP2R1) is detected by SMR but does not pass the HEIDI test. This genes encodes for the **cy**tochrome **P**450 **2R1**, which is the Vitamin D 25-hydroxylase. A low frequency SNP on this gene has a strong effect on VitaminD ([paper](https://www.sciencedirect.com/science/article/pii/S000292971730277X))
 
 
-- **Chromosome 11 ~71MB region**:
+<br><br>
 
-    - Genes DHCR7 and NADSYN1 are detected as having a causal effect in eQTLGEN dataset. RP11-660L16.2 is detected in Liver. AP002387.1 (= RP11-660L16.2) is detected in both EQTLGen and Liver data.
-    
-    - DHCR7 is involved in cholesterol production. Not much to say about other genes.
+- The [genes KRTAP*](http://www.genecards.org/cgi-bin/carddisp.pl?gene=KRTAP5-9) are detected as causal (both SMR and HEIDI OK) in several brain tissues. These genes are keratin associated proteins. Something to see with hair..
 
-- The HEIDI test allows to detect the linkage case. After performing this test, only 2 genes remain associated: DHCR7 and SPON1
+- The [gene PDE3B](https://en.wikipedia.org/wiki/Phosphodiesterase_3) is detected by SMR but don't pass the HEIDI test. It is a phosphodiesterase. It has a role in regulating heart muscle, vascular smooth muscle and platelet aggregation. This gene is [not expressed in Liver](https://en.wikipedia.org/wiki/Phosphodiesterase_3), what can explain that it has not been detected using the GTEX dataset. Possible link with obesity and diabetes. 
+
+- The gene RRAS2 is detected is detected by SMR but don't pass the HEIDI test.
+
+- The gene SPON1 is detected in Liver. But nothing else to say about it...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#- Supplementary Material: Whole SMR result {.tabset}
+***
+
+##eQTLGen
+A list of all the result is available here:
+```{r, message=FALSE, warning=FALSE}
+datatable(eqtlgen, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
+```
+
+##GTEX
+A list of all the result is available here:
+```{r, message=FALSE, warning=FALSE}
+datatable(data, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T) )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -3,17 +3,14 @@ title: "Phenotype description"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
-  
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-```
-
+<br><br>
 
 This file is the first part of the vitamin-D GWAS analysis. What it does:
 
-* Create a Phenotype file with blood pressure + other traits from the whole UKB (**server only**)
-* Describe it
+* Create a Phenotype file with vitamin-D + other traits of interest like sex, BMI, height, vitaminD nutrition
+* Describe Vitamin-D dataset: seasonality, distribution etc.
+* Create a Phenotype file with the IPAQ Score of UKB people
+
 
 ```{r, message=FALSE, warning=FALSE}
 # We will need a few library to run this document
@@ -27,7 +24,8 @@ library(knitr)
 
 
 
-#- Get blood pressure data
+
+#- Get vitamin-D data and related
 ***
 The first step is to read the UKB phenotype file and output only a few fields that will interest me. I will keep only:
 
@@ -68,13 +66,13 @@ scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA
 
 #- Describe blood pressure  {.tabset .tabset-fade .tabset-pills}
 ***
-```{r}
+```{r load_data}
 #Load the file in R
 data=read.table("0_DATA/pheno.txt.gz", header=T, sep=" ")
 ```
 
 ##Dimension
-```{r}
+```{r dimension}
 tot=nrow(data)
 blood=nrow(data[which(!is.na(data$f.4079.0.0)),])
 ```

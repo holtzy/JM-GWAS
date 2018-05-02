@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 01 May 2018" />
+<meta name="author" content="by Yan Holtz - 03 May 2018" />
 
 
 <title>Using Methylation data</title>
@@ -242,7 +242,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Using Methylation data</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 May 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 03 May 2018</em></h4>
 
 </div>
 
@@ -316,7 +316,7 @@ data %&gt;%
 <pre class="r"><code>tmp &lt;- data %&gt;%
   filter(ProbeChr==4) %&gt;%
   filter(Probe_bp&gt;71000000 &amp; Probe_bp&lt;74000000) %&gt;%
-  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
+  dplyr::select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
   gather(key, position, -1, -2, -3) %&gt;%
   mutate(position=position/1000000)
   
@@ -324,11 +324,11 @@ tmp %&gt;% ggplot( aes(y=position, x=key)) +
     geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR&lt;thres,&quot;signif&quot;,&quot;non signif&quot;))) +
     geom_point() +
     geom_text( 
-      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% dplyr::select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
       aes( label=Gene) , angle=45, color=&quot;grey&quot;, hjust=1, nudge_x = -0.1
     ) +
     geom_text( 
-      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% dplyr::select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
       aes( x=key, label=topSNP) , angle=45, color=&quot;grey&quot;, hjust=0, nudge_x = 0.1
     ) +
     coord_flip() +
@@ -356,7 +356,7 @@ data %&gt;%
 <pre class="r"><code>tmp &lt;- data %&gt;%
   filter(ProbeChr==11) %&gt;%
   filter(Probe_bp&gt;14000000 &amp; Probe_bp&lt;15500000) %&gt;%
-  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
+  dplyr::select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
   gather(key, position, -1, -2, -3) %&gt;%
   mutate(position=position/1000000)
   
@@ -364,11 +364,11 @@ tmp %&gt;% ggplot( aes(y=position, x=key)) +
     geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR&lt;thres,&quot;signif&quot;,&quot;non signif&quot;))) +
     geom_point() +
     geom_text( 
-      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% dplyr::select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
       aes( label=Gene) , angle=45, color=&quot;grey&quot;, hjust=1, nudge_x = -0.1
     ) +
     geom_text( 
-      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% dplyr::select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
       aes( x=key, label=topSNP) , angle=45, color=&quot;grey&quot;, hjust=0, nudge_x = 0.1
     ) +
     coord_flip() +
@@ -395,8 +395,8 @@ data %&gt;%
 </div>
 <pre class="r"><code>tmp &lt;- data %&gt;%
   filter(ProbeChr==11) %&gt;%
-  filter(Probe_bp&gt;71000000 &amp; Probe_bp&lt;72000000) %&gt;%
-  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
+  filter(Probe_bp&gt;71000000 &amp; Probe_bp&lt;71500000) %&gt;%
+  dplyr::select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %&gt;%
   gather(key, position, -1, -2, -3) %&gt;%
   mutate(position=position/1000000)
   
@@ -404,11 +404,11 @@ tmp %&gt;% ggplot( aes(y=position, x=key)) +
     geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR&lt;thres,&quot;signif&quot;,&quot;non signif&quot;))) +
     geom_point() +
     geom_text( 
-      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key==&quot;Probe_bp&quot;) %&gt;% dplyr::select(Gene, key, position) %&gt;% group_by(Gene) %&gt;% summarize(key=unique(key), position=mean(position)), 
       aes( label=Gene) , angle=45, color=&quot;grey&quot;, hjust=1, nudge_x = -0.1
     ) +
     geom_text_repel( 
-      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key==&quot;topSNP_bp&quot;) %&gt;% dplyr::select(topSNP, key, position) %&gt;% group_by(topSNP) %&gt;% summarize(key=unique(key), position=mean(position)), 
       aes( x=key, label=topSNP) , angle=45, color=&quot;grey&quot;, hjust=0, nudge_x = 0.1
     ) +
     coord_flip() +

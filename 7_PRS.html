@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 26 April 2018" />
+<meta name="author" content="by Yan Holtz - 03 May 2018" />
 
 
 <title>Polygenic Risk Score</title>
@@ -218,6 +218,9 @@ $(document).ready(function () {
   <a href="8_mtCOJO.html">mtCOJO</a>
 </li>
 <li>
+  <a href="9_Methylation.html">Methylation</a>
+</li>
+<li>
   <a href="5_XIA_et_al.html">Xia et al</a>
 </li>
       </ul>
@@ -239,7 +242,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Polygenic Risk Score</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 26 April 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 03 May 2018</em></h4>
 
 </div>
 
@@ -326,10 +329,10 @@ GPS$latitude[is.na(GPS$latitude)] &lt;- GPS$f.129.2.0[is.na(GPS$latitude)]
 GPS$longitude &lt;- GPS$f.130.0.0
 GPS$longitude[is.na(GPS$longitude)] &lt;- GPS$f.130.1.0[is.na(GPS$longitude)]
 GPS$longitude[is.na(GPS$longitude)] &lt;- GPS$f.130.2.0[is.na(GPS$longitude)]
-GPS &lt;- GPS %&gt;% select(f.eid, f.31.0.0, latitude, longitude)
+GPS &lt;- GPS %&gt;% dplyr::select(f.eid, f.31.0.0, latitude, longitude)
 
 # Merge
-data &lt;- merge(PRS, GPS, by.x=&quot;ID&quot;, by.y=&quot;f.eid&quot;, all.x=T) %&gt;% na.omit() %&gt;% select(longitude, latitude, PRS, ID, f.31.0.0)
+data &lt;- merge(PRS, GPS, by.x=&quot;ID&quot;, by.y=&quot;f.eid&quot;, all.x=T) %&gt;% na.omit() %&gt;% dplyr::select(longitude, latitude, PRS, ID, f.31.0.0)
 write.table(data, file=&quot;VitaminD_PRS_with_GPS.txt&quot;, row.names=FALSE, quote=FALSE)
 gzip VitaminD_PRS_with_GPS.txt
  
@@ -410,7 +413,7 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 <pre class="r"><code>data &lt;- read.table(&quot;0_DATA/PRS_with_diseases.txt.gz&quot;, header=T)
 
 data %&gt;% 
-  select(PRS, F00:F840) %&gt;%
+  dplyr::select(PRS, F00:F840) %&gt;%
   gather(disease, value, -1) %&gt;%
   ggplot( aes(x=as.factor(value), y=PRS, fill=as.factor(value))) +
     geom_boxplot() +
@@ -420,7 +423,7 @@ data %&gt;%
 <p>Representation using decile: I count the number of people with a disease in each decile of Vitamin-D PRS. Looks like it work for F00 = Dementia in Alzheimer’s disease. But it is in the wrong side? If I have more vitamin D (decile is high), then I have more people witht this disease? This is very weird..</p>
 <pre class="r"><code>data %&gt;%
     mutate(decile = ntile(PRS, 10)) %&gt;%
-    select(decile, F00:F840) %&gt;%
+    dplyr::select(decile, F00:F840) %&gt;%
     gather(disease, value, -1) %&gt;%   
     group_by(decile, disease) %&gt;%
     summarize(nb=sum(value)) %&gt;%
@@ -458,7 +461,7 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 <pre class="r"><code>data &lt;- read.table(&quot;0_DATA/PRS_with_PC.txt.gz&quot;, header=TRUE)
 
 data %&gt;% head(1000) %&gt;%
-  select(PRS, PC1:PC10) %&gt;%
+  dplyr::select(PRS, PC1:PC10) %&gt;%
   gather(PC, value, -1) %&gt;%
   ggplot( aes(x=PRS, y=value)) +
     stat_density_2d(aes(fill = ..density..), geom = &quot;raster&quot;, contour = FALSE) +
@@ -474,7 +477,7 @@ data %&gt;% head(1000) %&gt;%
 <p><img src="7_PRS_files/figure-html/unnamed-chunk-17-1.png" width="960" /></p>
 <p>Check through a Scatterplot</p>
 <pre class="r"><code>data %&gt;% 
-  select(PRS, PC1:PC10) %&gt;%
+  dplyr::select(PRS, PC1:PC10) %&gt;%
   gather(PC, value, -1) %&gt;%
   ggplot( aes(x=PRS, y=value)) +
     geom_point(size=0.1, alpha=0.1) +
@@ -519,7 +522,7 @@ GPS$latitude[is.na(GPS$latitude)] &lt;- GPS$f.129.2.0[is.na(GPS$latitude)]
 GPS$longitude &lt;- GPS$f.130.0.0
 GPS$longitude[is.na(GPS$longitude)] &lt;- GPS$f.130.1.0[is.na(GPS$longitude)]
 GPS$longitude[is.na(GPS$longitude)] &lt;- GPS$f.130.2.0[is.na(GPS$longitude)]
-GPS &lt;- GPS %&gt;% select(f.eid, f.31.0.0, latitude, longitude)
+GPS &lt;- GPS %&gt;% dplyr::select(f.eid, f.31.0.0, latitude, longitude)
 
 # Merge &amp; clean
 data &lt;- merge(PRS, GPS, by.x=&quot;V1&quot;, by.y=&quot;f.eid&quot;, all.x=T) %&gt;% 
@@ -528,7 +531,7 @@ data &lt;- merge(PRS, GPS, by.x=&quot;V1&quot;, by.y=&quot;f.eid&quot;, all.x=T)
   filter(GC_gene!=&quot;00&quot;) %&gt;% 
   droplevels() %&gt;% 
   mutate(GC=as.numeric(GC_gene)) %&gt;% 
-  select(latitude, longitude, GC)
+  dplyr::select(latitude, longitude, GC)
   
 # Save and zip
 write.table(data, file=&quot;VitaminD_PRS_geneGC.txt&quot;, row.names=FALSE, quote=FALSE)

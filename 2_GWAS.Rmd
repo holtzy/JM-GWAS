@@ -3,11 +3,8 @@ title: "GWAS"
 author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
+<br><br><br>
 
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br><br>"))
-```
 
 >This document describes a GWAS realised on the [diastolic blood pressure](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=4079) data of the [UKBiobank](http://www.ukbiobank.ac.uk) dataset. It runs the GWAS using both [Plink](https://www.cog-genomics.org/plink2) and [Bolt](http://www.thetasolutionsllc.com/bolt-software.html). Summary statistics are described. They are then use as input to the [FUMA](http://fuma.ctglab.nl) and [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) website for further analysis. 
 
@@ -343,7 +340,7 @@ don <- data %>%
   group_by(CHR) %>% 
   summarise(chr_len=max(BP)) %>% 
   mutate(tot=cumsum(chr_len)-chr_len) %>%
-  select(-chr_len) %>%
+  dplyr::select(-chr_len) %>%
   left_join(data, ., by=c("CHR"="CHR")) %>%
   
   # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
@@ -485,7 +482,7 @@ don <- data %>%
   group_by(CHR) %>% 
   summarise(chr_len=max(BP)) %>% 
   mutate(tot=cumsum(chr_len)-chr_len) %>%
-  select(-chr_len) %>%
+  dplyr::select(-chr_len) %>%
   left_join(data, ., by=c("CHR"="CHR")) %>%
   
   # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster
@@ -719,6 +716,9 @@ Lots of information available. Available here for John.
   
 
 
+
+#- GWAS on IPAQ score.
+***
 
 
 

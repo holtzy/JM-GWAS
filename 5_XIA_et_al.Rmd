@@ -68,7 +68,7 @@ don <- data %>%
   group_by(CHR) %>% 
   summarise(chr_len=max(BP)) %>% 
   mutate(tot=cumsum(chr_len)-chr_len) %>%
-  select(-chr_len) %>%
+  dplyr::select(-chr_len) %>%
   left_join(data, ., by=c("CHR"="CHR")) %>%
   
   # keep only SNP with pvalue < 0.05: it makes the plot realisation way faster

@@ -107,7 +107,7 @@ Can I make a diagram of these associations?
 tmp <- data %>%
   filter(ProbeChr==4) %>%
   filter(Probe_bp>71000000 & Probe_bp<74000000) %>%
-  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
+  dplyr::select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
   gather(key, position, -1, -2, -3) %>%
   mutate(position=position/1000000)
   
@@ -115,11 +115,11 @@ tmp %>% ggplot( aes(y=position, x=key)) +
     geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR<thres,"signif","non signif"))) +
     geom_point() +
     geom_text( 
-      data=subset(tmp, key=="Probe_bp") %>% select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key=="Probe_bp") %>% dplyr::select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
       aes( label=Gene) , angle=45, color="grey", hjust=1, nudge_x = -0.1
     ) +
     geom_text( 
-      data=subset(tmp, key=="topSNP_bp") %>% select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key=="topSNP_bp") %>% dplyr::select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
       aes( x=key, label=topSNP) , angle=45, color="grey", hjust=0, nudge_x = 0.1
     ) +
     coord_flip() +
@@ -145,7 +145,7 @@ data %>%
 tmp <- data %>%
   filter(ProbeChr==11) %>%
   filter(Probe_bp>14000000 & Probe_bp<15500000) %>%
-  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
+  dplyr::select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
   gather(key, position, -1, -2, -3) %>%
   mutate(position=position/1000000)
   
@@ -153,11 +153,11 @@ tmp %>% ggplot( aes(y=position, x=key)) +
     geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR<thres,"signif","non signif"))) +
     geom_point() +
     geom_text( 
-      data=subset(tmp, key=="Probe_bp") %>% select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key=="Probe_bp") %>% dplyr::select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
       aes( label=Gene) , angle=45, color="grey", hjust=1, nudge_x = -0.1
     ) +
     geom_text( 
-      data=subset(tmp, key=="topSNP_bp") %>% select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key=="topSNP_bp") %>% dplyr::select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
       aes( x=key, label=topSNP) , angle=45, color="grey", hjust=0, nudge_x = 0.1
     ) +
     coord_flip() +
@@ -185,8 +185,8 @@ data %>%
 ```{r, fig.width=10, fig.align="center", warning=FALSE}
 tmp <- data %>%
   filter(ProbeChr==11) %>%
-  filter(Probe_bp>71000000 & Probe_bp<72000000) %>%
-  select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
+  filter(Probe_bp>71000000 & Probe_bp<71500000) %>%
+  dplyr::select(Gene, topSNP, p_SMR, Probe_bp, topSNP_bp) %>%
   gather(key, position, -1, -2, -3) %>%
   mutate(position=position/1000000)
   
@@ -194,11 +194,11 @@ tmp %>% ggplot( aes(y=position, x=key)) +
     geom_line(aes(group=paste(Gene,topSNP), color=ifelse(p_SMR<thres,"signif","non signif"))) +
     geom_point() +
     geom_text( 
-      data=subset(tmp, key=="Probe_bp") %>% select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key=="Probe_bp") %>% dplyr::select(Gene, key, position) %>% group_by(Gene) %>% summarize(key=unique(key), position=mean(position)), 
       aes( label=Gene) , angle=45, color="grey", hjust=1, nudge_x = -0.1
     ) +
     geom_text_repel( 
-      data=subset(tmp, key=="topSNP_bp") %>% select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
+      data=subset(tmp, key=="topSNP_bp") %>% dplyr::select(topSNP, key, position) %>% group_by(topSNP) %>% summarize(key=unique(key), position=mean(position)), 
       aes( x=key, label=topSNP) , angle=45, color="grey", hjust=0, nudge_x = 0.1
     ) +
     coord_flip() +

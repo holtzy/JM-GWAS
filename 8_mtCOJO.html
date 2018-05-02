@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 01 May 2018" />
+<meta name="author" content="by Yan Holtz - 03 May 2018" />
 
 
 <title>mtCOJO</title>
@@ -242,7 +242,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">mtCOJO</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 01 May 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 03 May 2018</em></h4>
 
 </div>
 
@@ -357,7 +357,7 @@ plot_primary &lt;- function(file){
   # Show the information of GSMR withour mtCOJO
   before &lt;- read.table(&quot;0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr&quot;, header = T)
   before &lt;- before %&gt;%
-      select(Outcome, bxy, p)
+      dplyr::select(Outcome, bxy, p)
   colnames(before) &lt;- c(&quot;Outcome&quot;, &quot;bxy_before&quot;, &quot;p_before&quot;)
   
   # Merge
@@ -400,7 +400,7 @@ plot_secondary &lt;- function(file){
   # Show the information of GSMR withour mtCOJO
   before &lt;- read.table(&quot;0_DATA/gsmr_result_vitaminDXiaEtAl.gsmr&quot;, header = T)
   before &lt;- before %&gt;%
-      select(Outcome, bxy, p)
+      dplyr::select(Outcome, bxy, p)
   colnames(before) &lt;- c(&quot;Outcome&quot;, &quot;bxy_before&quot;, &quot;p_before&quot;)
   
   # Merge

@@ -97,10 +97,10 @@ GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.2.0[is.na(GPS$latitude)]
 GPS$longitude <- GPS$f.130.0.0
 GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.1.0[is.na(GPS$longitude)]
 GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.2.0[is.na(GPS$longitude)]
-GPS <- GPS %>% select(f.eid, f.31.0.0, latitude, longitude)
+GPS <- GPS %>% dplyr::select(f.eid, f.31.0.0, latitude, longitude)
 
 # Merge
-data <- merge(PRS, GPS, by.x="ID", by.y="f.eid", all.x=T) %>% na.omit() %>% select(longitude, latitude, PRS, ID, f.31.0.0)
+data <- merge(PRS, GPS, by.x="ID", by.y="f.eid", all.x=T) %>% na.omit() %>% dplyr::select(longitude, latitude, PRS, ID, f.31.0.0)
 write.table(data, file="VitaminD_PRS_with_GPS.txt", row.names=FALSE, quote=FALSE)
 gzip VitaminD_PRS_with_GPS.txt
  
@@ -212,7 +212,7 @@ Visualize that:
 data <- read.table("0_DATA/PRS_with_diseases.txt.gz", header=T)
 
 data %>% 
-  select(PRS, F00:F840) %>%
+  dplyr::select(PRS, F00:F840) %>%
   gather(disease, value, -1) %>%
   ggplot( aes(x=as.factor(value), y=PRS, fill=as.factor(value))) +
     geom_boxplot() +
@@ -227,7 +227,7 @@ Representation using decile: I count the number of people with a disease in each
 ```{r}
 data %>%
     mutate(decile = ntile(PRS, 10)) %>%
-    select(decile, F00:F840) %>%
+    dplyr::select(decile, F00:F840) %>%
     gather(disease, value, -1) %>%   
     group_by(decile, disease) %>%
     summarize(nb=sum(value)) %>%
@@ -281,7 +281,7 @@ Check the relationship
 data <- read.table("0_DATA/PRS_with_PC.txt.gz", header=TRUE)
 
 data %>% head(1000) %>%
-  select(PRS, PC1:PC10) %>%
+  dplyr::select(PRS, PC1:PC10) %>%
   gather(PC, value, -1) %>%
   ggplot( aes(x=PRS, y=value)) +
     stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
@@ -299,7 +299,7 @@ data %>% head(1000) %>%
 Check through a Scatterplot
 ```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
 data %>% 
-  select(PRS, PC1:PC10) %>%
+  dplyr::select(PRS, PC1:PC10) %>%
   gather(PC, value, -1) %>%
   ggplot( aes(x=PRS, y=value)) +
     geom_point(size=0.1, alpha=0.1) +
@@ -359,7 +359,7 @@ GPS$latitude[is.na(GPS$latitude)] <- GPS$f.129.2.0[is.na(GPS$latitude)]
 GPS$longitude <- GPS$f.130.0.0
 GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.1.0[is.na(GPS$longitude)]
 GPS$longitude[is.na(GPS$longitude)] <- GPS$f.130.2.0[is.na(GPS$longitude)]
-GPS <- GPS %>% select(f.eid, f.31.0.0, latitude, longitude)
+GPS <- GPS %>% dplyr::select(f.eid, f.31.0.0, latitude, longitude)
 
 # Merge & clean
 data <- merge(PRS, GPS, by.x="V1", by.y="f.eid", all.x=T) %>% 
@@ -368,7 +368,7 @@ data <- merge(PRS, GPS, by.x="V1", by.y="f.eid", all.x=T) %>%
   filter(GC_gene!="00") %>% 
   droplevels() %>% 
   mutate(GC=as.numeric(GC_gene)) %>% 
-  select(latitude, longitude, GC)
+  dplyr::select(latitude, longitude, GC)
   
 # Save and zip
 write.table(data, file="VitaminD_PRS_geneGC.txt", row.names=FALSE, quote=FALSE)

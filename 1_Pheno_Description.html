@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 03 May 2018" />
+<meta name="author" content="by Yan Holtz - 08 May 2018" />
 
 
 <title>Phenotype description</title>
@@ -242,16 +242,17 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Phenotype description</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 03 May 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 08 May 2018</em></h4>
 
 </div>
 
 
-<br><br>
+<p><br><br></p>
 <p>This file is the first part of the vitamin-D GWAS analysis. What it does:</p>
 <ul>
-<li>Create a Phenotype file with blood pressure + other traits from the whole UKB (<strong>server only</strong>)</li>
-<li>Describe it</li>
+<li>Create a Phenotype file with vitamin-D + other traits of interest like sex, BMI, height, vitaminD nutrition</li>
+<li>Describe Vitamin-D dataset: seasonality, distribution etc.</li>
+<li>Create a Phenotype file with the IPAQ Score of UKB people</li>
 </ul>
 <pre class="r"><code># We will need a few library to run this document
 library(tidyverse)
@@ -259,8 +260,8 @@ library(rmarkdown)    # You need this library to run this template.
 library(epuRate)      # Install with devtools: install_github(&quot;holtzy/epuRate&quot;, force=TRUE)
 library(xtable)
 library(knitr)</code></pre>
-<div id="get-blood-pressure-data" class="section level1">
-<h1><span class="header-section-number">1</span> - Get blood pressure data</h1>
+<div id="get-vitamin-d-data-and-related" class="section level1">
+<h1><span class="header-section-number">1</span> - Get vitamin-D data and related</h1>
 <hr />
 <p>The first step is to read the UKB phenotype file and output only a few fields that will interest me. I will keep only:</p>
 <ul>
@@ -287,8 +288,8 @@ scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA</code></pre>
 </div>
-<div id="describe-blood-pressure" class="section level1 tabset tabset-fade tabset-pills">
-<h1><span class="header-section-number">2</span> - Describe blood pressure</h1>
+<div id="describe-vitamin-d" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> - Describe Vitamin-D</h1>
 <hr />
 <pre class="r"><code>#Load the file in R
 data=read.table(&quot;0_DATA/pheno.txt.gz&quot;, header=T, sep=&quot; &quot;)</code></pre>
@@ -306,8 +307,56 @@ Among them 468182 people have info concerning their blood pressure (93.146635 %)
   ggplot( aes(x=f.4079.0.0)) +
     geom_density( fill=&quot;skyblue&quot;, color=&quot;skyblue&quot;) +
     xlab(&quot;Diastolic blood pressure&quot;)</code></pre>
-<p><img src="1_Pheno_Description_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="1_Pheno_Description_files/figure-html/unnamed-chunk-281-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
+</div>
+<div id="other-vitamin-d-related-traits" class="section level1">
+<h1><span class="header-section-number">3</span> - Other Vitamin D related traits</h1>
+<hr />
+<ul>
+<li>f.100021.0.0 = Vitamin D. <a href="http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=100021">Webpage</a></li>
+<li>f.20084.0.0 = Vitamin and/or mineral supplement use. <a href="http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=20084">webpage</a>. If this column == 479, then the participant took vitamin-D supplement in the last 24 hours.</li>
+</ul>
+</div>
+<div id="ipaq-score-phenotype" class="section level1">
+<h1><span class="header-section-number">4</span> - IPAQ score phenotype</h1>
+<hr />
+<p>The IPAQ score is an estimate of outdoor activities. (International Physical Activity Questionnaire Score). It takes into account:</p>
+<ul>
+<li>Walking: Number of days/week walked 10+ minutes (Field 864.00) and Duration of walk (field 874.00).</li>
+<li>Moderate: Number of days/week of moderate physical activity 10+ minutes (Field 884.00) and Duration of moderate activity (Field 894.00).</li>
+<li>Vigorous: Number of days/week of vigorous physical activity 10+ minutes (Field 904.00) and Duration of vigorous activity (Field 914.00).</li>
+</ul>
+<p>The sum of them gives the IPAQ score. Let’s compute it in R.</p>
+<p>This work is done on the <strong>Inode server</strong>, the file I get is transfered locally using ssh.</p>
+<pre class="r"><code># good repertory
+ssh uqyholtz@inode.qbi.uq.edu.au
+cd /ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS/0_DATA
+
+# Get the good column + repeat the ID + change header to respect plink format
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | awk &#39;{print $1,$1,$8,$22,$280,$283,$286,$289,$292,$295}&#39; &gt; tmp
+
+# Transfert locally
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/0_DATA/tmp .
+
+# Open this file in R, and compute IPAQ
+R
+data &lt;- read.table(&quot;tmp.gz&quot;,  header=T, sep=&quot; &quot;)
+a &lt;- data$`f.864.0.0` * data$`f.874.0.0` * 3.3
+b &lt;- data$`f.884.0.0` * data$`f.894.0.0` * 4
+c &lt;- data$`f.904.0.0` * data$`f.914.0.0` * 8
+data$IPAQ &lt;- a + b + c
+colnames(data)[c(1,2)] &lt;- c(&quot;FID&quot;, &quot;IID&quot;)
+  
+# Number of missing data?
+length(which(is.na(data$IPAQ)))
+
+# Save with new score
+write.table(data, file=&quot;UKB_IPAQ_score.txt&quot;, row.names=FALSE, quote=FALSE)
+
+# Send it on Delta
+scp  UKB_IPAQ_score.txt  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB</code></pre>
 </div>
 
 &nbsp;

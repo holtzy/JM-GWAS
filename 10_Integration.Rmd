@@ -133,7 +133,7 @@ source("/shares/compbio/Group-Wray/YanHoltz/SOFT/plot_OmicsSMR_24_April.r")
 SMRData = ReadomicSMRData(input)
 
 # Plot
-pdf(output, height=10, width=8)
+pdf(output, height=15, width=18)
 omicSMRLocusPlot(data=SMRData,
                  
                  # Threshold for SMR tests:

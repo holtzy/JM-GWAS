@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="by Yan Holtz - 08 May 2018" />
+
+
+<title>Integrating all the information</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/lumen.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 54px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+
+.section h2 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h3 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h4 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h5 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h6 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Vitamin-D GWAS in the UKB</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="index.html">Intro</a>
+</li>
+<li>
+  <a href="1_Pheno_Description.html">Pheno</a>
+</li>
+<li>
+  <a href="2_GWAS.html">GWAS</a>
+</li>
+<li>
+  <a href="6_LDSC.html">LDSC</a>
+</li>
+<li>
+  <a href="3_SMR.html">SMR</a>
+</li>
+<li>
+  <a href="4_GSMR.html">GSMR</a>
+</li>
+<li>
+  <a href="7_PRS.html">PRS</a>
+</li>
+<li>
+  <a href="8_mtCOJO.html">mtCOJO</a>
+</li>
+<li>
+  <a href="9_Methylation.html">Methylation</a>
+</li>
+<li>
+  <a href="5_XIA_et_al.html">Xia et al</a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+<a href="https://github.com/holtzy/" class="github-corner" aria-label="View source on Github"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#2ecc71; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
+<div class="fluid-row" id="header">
+
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Integrating all the information</h1>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 08 May 2018</em></h4>
+
+</div>
+
+
+<p><br><br></p>
+<blockquote>
+<p>This document applies the SMR tool on both the Expression and Methylation data in the same time. It also takes into account the descriptive classification of chromatin.</p>
+</blockquote>
+<div id="method" class="section level1">
+<h1><span class="header-section-number">1</span> - Method</h1>
+<hr />
+<p>I’m gonna use the methylation data located on Delta at <code>/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy</code></p>
+<p>I run SMR on it, like I’ve done for eQTL data.</p>
+</div>
+<div id="run-smr" class="section level1 tabset">
+<h1><span class="header-section-number">2</span> - Run SMR</h1>
+<hr />
+<p>Run SMR on both expression and methylation datasets in the same time.</p>
+<div id="chromo-11-15mb" class="section level2">
+<h2><span class="header-section-number">2.1</span> Chromo 11 ~ 15Mb</h2>
+<pre class="r"><code># Good folder
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
+
+# list of option and file:
+ref=&quot;/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC&quot;
+sum=&quot;/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma&quot;
+METHY=&quot;/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11&quot;
+rug=&quot;/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense&quot;
+genelist=&quot;/shares/compbio/Group-Wray/YanHoltz/DATA/GENE_POSITION/glist_hg19_refseq.txt&quot;
+probe=&quot;ENSG00000152270&quot;
+window=&quot;1000&quot;
+psmr=&quot;5e-8&quot;
+thread=&quot;6&quot;
+out=&quot;./integration_result_Chr11_15Mb&quot;
+
+# Run the analysis
+tmp_command=&quot;smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G smr_integration 10:00:00 &quot;&quot;
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA/SMR_PLOT_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/* .</code></pre>
+</div>
+<div id="chromo-11-71mb" class="section level2">
+<h2><span class="header-section-number">2.2</span> Chromo 11 ~ 71Mb</h2>
+<pre class="r"><code># Good folder
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
+
+# list of option and file:
+ref=&quot;/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC&quot;
+sum=&quot;/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma&quot;
+METHY=&quot;/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11&quot;
+rug=&quot;/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense&quot;
+genelist=&quot;/shares/compbio/Group-Wray/YanHoltz/DATA/GENE_POSITION/glist_hg19_refseq.txt&quot;
+probe=&quot;ENSG00000254682&quot;
+window=&quot;1000&quot;
+psmr=&quot;5e-8&quot;
+thread=&quot;6&quot;
+out=&quot;./integration_result_Chr11_71Mb&quot;
+
+# Run the analysis
+tmp_command=&quot;smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread&quot;
+qsubshcom &quot;$tmp_command&quot; 1 30G smr_integration 10:00:00 &quot;&quot;
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA/SMR_PLOT_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/* .</code></pre>
+</div>
+</div>
+<div id="make-the-plot" class="section level1 tabset">
+<h1><span class="header-section-number">3</span> - Make the plot</h1>
+<hr />
+<p>How to read the plots (from top to bottom):</p>
+<ul>
+<li>GWAS layer,
+<ul>
+<li><strong>grey dots</strong> = SNPs. Y axis shows their GWAS P-value.</li>
+<li><strong>maroon rhombus</strong> = gene expression probe. <strong>navy cycle</strong> = methylation probe. Y axis shows their SMR P-value.</li>
+<li><strong>solid</strong> = passed HEIDI threshold. <strong>hollow</strong> = did not pass.</li>
+</ul></li>
+<li>eQTL layers,
+<ul>
+<li>One graphic for each probe that passed the <strong>e</strong>SMR and HEIDI tests</li>
+<li><strong>maroon cross</strong> = SNPs. The Y axis show their eQTL pvalue = how much this SNP is linked with the gene expression.</li>
+</ul></li>
+<li>mQTL layers,
+<ul>
+<li>One graphic for each probe that passed the <strong>m</strong>SMR and HEIDI tests</li>
+<li><strong>blue cycles</strong> = SNPs. The Y axis show their mQTL pvalue = how much this SNP is linked with the gene expression.</li>
+</ul></li>
+<li>Chromatin layer,
+<ul>
+<li>Each row of the heatmap show one of the 127 sample from the <a href="http://www.roadmapepigenomics.org">Roadmap Epigenomics Mapping Consortium</a> (REMC)</li>
+<li>Each column is a SNP. Its position on the X axis is a proxy of its position on the chromosome.</li>
+<li>The color of the square gives the function of the SNP, deduced from chromatin state. <a href="http://egg2.wustl.edu/roadmap/web_portal/imputed.html#chr_imp">Legend detail here</a>. Tx = Transcription. Red=promotor.</li>
+<li>Left color bar: each sample has been observed for a specific tissue. For example, over the 127 samples, about 13 have had measurment in blood &amp; T-cell.</li>
+</ul></li>
+</ul>
+<pre class="r"><code># good folder
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
+
+# Create an R script to make the plot for a specific region and put it in a file script.R:
+# Read the data file in R:
+args &lt;- commandArgs(TRUE)
+input &lt;- args[1]
+output &lt;- args[2]
+source(&quot;/shares/compbio/Group-Wray/YanHoltz/SOFT/plot_OmicsSMR_24_April.r&quot;)
+SMRData = ReadomicSMRData(input)
+
+# Plot
+pdf(output, height=10, width=8)
+omicSMRLocusPlot(data=SMRData,
+                 
+                 # Threshold for SMR tests:
+                 esmr_thresh=0.1, msmr_thresh=0.1, m2esmr_thresh=0.1,
+                 
+                 # Threshold for HEIDI tests:
+                 esmr_heidi = 0, msmr_heidi = 0, m2esmr_heidi = 0,
+                 
+                 # Other features
+                 max_anno_probe = 6, anno_methyl=TRUE, max_plot_mprobe = 1, window = 700, epi_plot=T )
+dev.off()
+
+# Send the script for all the regions I need.
+tmp_command=&quot;Rscript script.R /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/integration_result_Chr11_15Mb.ENSG00000152270.txt plot_integ_ENSG00000152270.pdf&quot;
+qsubshcom &quot;$tmp_command&quot; 1 10G smr_plot 10:00:00 &quot;&quot;
+
+tmp_command=&quot;Rscript script.R /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/integration_result_Chr11_71Mb.ENSG00000254682.txt plot_integ_ENSG00000254682.pdf&quot;
+qsubshcom &quot;$tmp_command&quot; 1 10G smr_plot 10:00:00 &quot;&quot;
+
+
+# Trasfer result locally
+cd
+scp y.holtz@delta.imb.uq.edu.au://shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/*pdf .</code></pre>
+<div id="chromo-11-15mb-1" class="section level2">
+<h2><span class="header-section-number">3.1</span> Chromo 11 ~ 15Mb</h2>
+<p><img src="IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf" alt="some text"  width="4200" height="4200"></p>
+</div>
+<div id="chromo-11-71-mb" class="section level2">
+<h2><span class="header-section-number">3.2</span> Chromo 11 ~ 71 Mb</h2>
+<p><img src="IMG/SMR_PLOT/plot_integ_ENSG00000254682.pdf" alt="some text"  width="4200" height="4200"></p>
+<p>Detail of function arguments:</p>
+<pre class="r"><code># Plot caractéristics
+data=SMRData
+esmr_thresh=0.05
+msmr_thresh=0.05
+m2esmr_thresh=0.05
+esmr_heidi = 0
+msmr_heidi = 0
+m2esmr_heidi = 0
+probeNEARBY=c(&quot;ENSG00000152270&quot;)
+interest_only=T
+max_anno_probe = 6
+anno_methyl=T
+max_plot_mprobe = 1
+window = 700
+epi_plot=T
+esmr_thresh_plot=NULL
+msmr_thresh_plot=NULL
+highlight=NULL
+pointsize=20
+anno_self=TRUE
+ASO=TRUE
+anno_dist=1.05
+trait_name=NULL</code></pre>
+</div>
+</div>
+
+&nbsp;
+<hr />
+<p style="text-align: center;">A work by <a href="https://github.com/holtzy/">Yan Holtz</a></p>
+<p style="text-align: center;"><span style="color: #808080;"><em>Yan.holtz.data@gmail.com</em></span></p>
+
+<!-- Add icon library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!-- Add font awesome icons -->
+<p style="text-align: center;">
+	<a href="https://twitter.com/r_graph_gallery?lang=en" class="fa fa-twitter"></a>
+	<a href="https://www.linkedin.com/in/yan-holtz-2477534a/" class="fa fa-linkedin"></a>
+	<a href="https://github.com/holtzy/" class="fa fa-github"></a>
+</p>
+
+&nbsp;
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

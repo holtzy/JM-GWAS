@@ -6,7 +6,7 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 <br><br><br>
 
 
->This document describes a GWAS realised on the [diastolic blood pressure](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=4079) data of the [UKBiobank](http://www.ukbiobank.ac.uk) dataset. It runs the GWAS using both [Plink](https://www.cog-genomics.org/plink2) and [Bolt](http://www.thetasolutionsllc.com/bolt-software.html). Summary statistics are described. They are then use as input to the [FUMA](http://fuma.ctglab.nl) and [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) website for further analysis. 
+>This document describes a GWAS realised on the [IPAQ SCORE]() data of the [UKBiobank](http://www.ukbiobank.ac.uk) dataset. It runs the GWAS using both [Plink](https://www.cog-genomics.org/plink2) and [Bolt](http://www.thetasolutionsllc.com/bolt-software.html). Summary statistics are described. They are then use as input to the [FUMA](http://fuma.ctglab.nl) and [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) website for further analysis. 
 
 
 
@@ -55,16 +55,16 @@ I run [plink version 1.9](https://www.cog-genomics.org/plink2) for this analysis
 An array is used to send the calculation for each chromosome in parrallele. This is done thanks to [this script](https://github.com/zhilizheng/qsubshcom).
 ```{bash, eval=FALSE}
 # Good folder on delta
-cd /home/y.holtz/BLOOD_GWAS/1_GWAS
+cd /shares/compbio/Group-Wray/YanHoltz/IPAQ_GWAS
 
 # prepare command
 tmp_command="plink \
           --bfile /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{TASK_ID}_v2_HM3_QC\
           --allow-no-sex \
           --linear \
-          --pheno /home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt \
-          --pheno-name f.4079.0.0 \
-          --out GWAS_blood_pressure_{TASK_ID}"
+          --pheno /shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_IPAQ_score.txt \
+          --pheno-name IPAQ \
+          --out GWAS_IPAQ_{TASK_ID}"
 
 # Send command in qsub
 qsubshcom "$tmp_command" 1 30G GWAS_plink 10:00:00 "-array=1-22"
@@ -80,64 +80,45 @@ qsubshcom "$tmp_command" 1 30G GWAS_plink 10:00:00 "-array=1-22"
 See code below to run the bolt analysis:
 ```{bash, eval=FALSE}
 # Go to the appropriate folder:
-cd /home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT
+cd /shares/compbio/Group-Wray/YanHoltz/IPAQ_GWAS/BOLT
 
-# Make a command that send the boltz analysis
-tmp_command="/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/bolt \
-  --bed=/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{1:22}_v2_HM3_QC.bed \
-  --bim=/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr{1:22}_v2_HM3_QC.bim \
-  --fam=/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr1_v2_HM3_QC.fam \
-  --phenoFile=/home/y.holtz/BLOOD_GWAS/0_DATA/pheno.txt \
-  --phenoCol=f.4079.0.0 \
-  --numThreads=22 \
-  --modelSnps=/gpfs/gpfs01/polaris/Q0286/UKBiobank_analysis/ukbEURu_imp_v2_HM3_QC_R2_09.snplist \
-  --LDscoresFile=/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/tables/LDSCORE.1000G_EUR.tab.gz \
-  --geneticMapFile=/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/tables/genetic_map_hg19_withX.txt.gz \
-  --lmm \
-  --statsFile output.res"
-  
+# A list of the files I need to run the GWAS:
+bolt="/gpfs/gpfs01/polaris/Q0286/bin/ukb_gwas_tool/bin/BOLT-LMM_v2.3/bolt"
+phen="/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB/UKB_IPAQ_score.txt"
+trait="IPAQ"
+
+# SNP to exclude: I discard SNP with MAF <0.001
+exsnp="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_all_v2_imp_QC_HRC_maf0001.EXCLUDEvarList"
+
+# Genotyping file = whole european HRC SNP = ~28730907 SNPs
+bim="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_chr{1:22}_v2_imp_QC_HRC.bim"
+bed="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_chr{1:22}_v2_imp_QC_HRC.bed"
+fam="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_chr1_v2_imp_QC_HRC.fam"
+
+# Covariate: sex age and 10 PCs. Note, it is also possible to correct for these traits before bolt.
+covar="/gpfs/gpfs01/polaris/Q0286/uqaxue/phen/covar_sex_age_10PCs.txt"
+
+# LDScore of each SNP (8M SNPs) -> used to compute the GRM
+table="/gpfs/gpfs01/polaris/Q0286/uqaxue/bin/BOLT/tables/LDSCORE.1000G_EUR.tab.gz"
+
+# Relation cM / Mb -> used for the GRM as well
+map="/gpfs/gpfs01/polaris/Q0286/uqaxue/bin/BOLT/tables/genetic_map_hg19.txt.gz"
+
+# list of SNP for the GRM = pruned SNP selection from HapMap3
+j_hm3="/gpfs/gpfs01/polaris/Q0286/uqaxue/phen/ukbEURu_imp_v2_HM3_QC_R2_09.snplist"
+
+out="/shares/compbio/Group-Wray/YanHoltz/IPAQ_GWAS/BOLT/GWAS_IPAQ_bolt.txt"
+
+# Send the script
+tmp_command="$bolt --bed=$bed --bim=$bim --fam=$fam --exclude $exsnp --phenoFile=$phen --phenoCol=$trait --covarFile $covar --covarCol=Sex --qCovarCol=Age --qCovarCol=PC{1:10} --lmm --modelSnps=$j_hm3 --maxModelSnps=720000 --LDscoresFile=$table --geneticMapFile=$map --statsFile=$out --numThreads 16"
+
 # Send command
 qsubshcom "$tmp_command" 1 100G GWAS_bolt 60:00:00 ""
 ```
 
 
-NOTE: ANGLI SCRIPT:
-```
-#PBS -S /bin/bash
-#PBS -N trait
-#PBS -A UQ-IMB-CNSG
-#PBS -o /shares/compbio/Group-Yang/a.xue/GSMR/UKB_GWAS_summary/trait/stdout_gwas_trait
-#PBS -e /shares/compbio/Group-Yang/a.xue/GSMR/UKB_GWAS_summary/trait/stderr_gwas_trait
-#PBS -l select=1:ncpus=16:intel=True:mem=96GB
-#PBS -l walltime=168:00:00
 
-cd /shares/compbio/Group-Yang/a.xue/GSMR/UKB_GWAS_summary/
 
-if [ ! -d "trait" ]; then
-    mkdir trait
-fi
-
-cd /shares/compbio/Group-Yang/a.xue/GSMR/UKB_GWAS_summary/trait/
-mv *.* /shares/compbio/Group-Yang/a.xue/trash/
-
-bolt="/shares/compbio/Group-Yang/a.xue/bin/BOLT/bolt"
-phen="/gpfs/gpfs01/polaris/Q0286/uqaxue/phen/ukb_v2_22_diseases_match_gera.phen"
-exsnp="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_all_v2_imp_QC_HRC_maf0001.EXCLUDEvarList"
-
-bim="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_chr{1:22}_v2_imp_QC_HRC.bim"
-bed="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_chr{1:22}_v2_imp_QC_HRC.bed"
-fam="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EUR_impHRC/ukbEUR_imp_chr1_v2_imp_QC_HRC.fam"
-
-covar="/gpfs/gpfs01/polaris/Q0286/uqaxue/phen/covar_sex_age_10PCs.txt"
-table="/gpfs/gpfs01/polaris/Q0286/uqaxue/bin/BOLT/tables/LDSCORE.1000G_EUR.tab.gz"
-map="/gpfs/gpfs01/polaris/Q0286/uqaxue/bin/BOLT/tables/genetic_map_hg19.txt.gz"
-hm3="/gpfs/gpfs01/polaris/Q0286/uqaxue/LDprune/hm3_pruned.snplist"
-j_hm3="/gpfs/gpfs01/polaris/Q0286/uqaxue/phen/ukbEURu_imp_v2_HM3_QC_R2_09.snplist"
-out="/shares/compbio/Group-Yang/a.xue/GSMR/UKB_GWAS_summary/trait/ukbEUR_MAF1e-4_trait.bolt"
-
-$bolt --bed=$bed --bim=$bim --fam=$fam --exclude $exsnp --phenoFile=$phen --phenoCol=trait --covarFile $covar --covarCol=Sex --qCovarCol=Age --qCovarCol=PC{1:10} --lmm --modelSnps=$j_hm3 --maxModelSnps=720000 --LDscoresF
-ile=$table --geneticMapFile=$map --statsFile=$out --numThreads 16 >> trait_bolt.log 2>&1
-```
 
 
 
@@ -195,12 +176,10 @@ gzip result_GWAS_bloodpressure_bolt.linear
 
 - **.ma**: file that will be used by SMR and GSMR
 ```{bash, eval=FALSE}
-# first I need to compute the allele frequency of the reference allele with gcta (~30 minutes)
-# See plink script, I will use the same output
-
-# Now I can build the .ma file for GSMR
-echo "SNP A1 A2 freq b se p n" > GWAS_blood_pressure_bolt.ma
-join <(awk '{print $2, $5, $6}' /gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr*bim | sort -k 1,1) <(awk '{print $2, $6}' /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency*.frq | sort) | join - <(zcat result_GWAS_bloodpressure_bolt.linear.gz | awk '{if(NR>1) print $2, $7, $7/$8, $9, $6 }' | sort -k 1,1) >> GWAS_blood_pressure_bolt.ma
+# !! to make the .ma file I need the number of available individual per SNP. This is not so easy. Angli has done a script for that.
+# See mail sended. See the script in /shares/compbio/Group-Wray/YanHoltz/SOFT/clean_BOLT_output.R
+# Just need to reorder column + go from missing data frequency to Number of available individual.
+more /shares/compbio/PCTG/a.xue/for_Yan/ukbEUR_MAF1e-4_IPAQG.bolt |  awk '{ print $1, $5, $6, $7, $9, $10, $11, 456426*(1-$8) }' | more
 ```
 
 
@@ -210,6 +189,7 @@ zcat result_GWAS_bloodpressure_bolt.linear.gz | head -1 > result_GWAS_bloodpress
 zcat result_GWAS_bloodpressure_bolt.linear.gz | awk '{ if($9<0.05){print $0 }}' >> result_GWAS_bloodpressure_bolt.linear.light
 gzip result_GWAS_bloodpressure_bolt.linear.light
 ```
+
 
 - **Split per chromosome**: to run the clumping faster, it is more convenient to have 1 file per chromosome.
 ```{bash, eval=FALSE}
@@ -227,6 +207,9 @@ Transfer files locally:
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/BOLT/result_GWAS_bloodpressure_bolt.linear.gz  .
 ```
+
+
+
 
 
 
@@ -714,11 +697,6 @@ Lots of information available. Available here for John.
 
   
   
-
-
-
-#- GWAS on IPAQ score.
-***
 
 
 

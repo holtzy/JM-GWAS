@@ -35,7 +35,7 @@ cd /gpfs/gpfs01/polaris/Q0286/
 - Inode (QBI Cluster)
 ```{r, eval=FALSE}
 # Access to Inode
-ssh uqyholtz@inode.qbi.uq.edu.au:/
+ssh uqyholtz@inode.qbi.uq.edu.au
 
 # Inode repo for this work
 /ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS

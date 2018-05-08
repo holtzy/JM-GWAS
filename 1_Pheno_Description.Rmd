@@ -64,7 +64,7 @@ scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA
 
 
 
-#- Describe blood pressure  {.tabset .tabset-fade .tabset-pills}
+#- Describe Vitamin-D  {.tabset .tabset-fade .tabset-pills}
 ***
 ```{r load_data}
 #Load the file in R
@@ -91,6 +91,62 @@ data %>%
     xlab("Diastolic blood pressure")
 ```
 
+
+
+
+
+
+
+#- Other Vitamin D related traits 
+***
+
+- f.100021.0.0 = Vitamin D. [Webpage](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=100021)
+- f.20084.0.0 = Vitamin and/or mineral supplement use. [webpage](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=20084). If this column == 479, then the participant took vitamin-D supplement in the last 24 hours.
+
+
+
+#- IPAQ score phenotype
+***
+
+The IPAQ score is an estimate of outdoor activities. (International Physical Activity Questionnaire Score). It takes into account:
+
+- Walking: Number of days/week walked 10+ minutes (Field 864.00) and Duration of walk (field 874.00).
+- Moderate: Number of days/week of moderate physical activity 10+ minutes (Field 884.00) and Duration of moderate activity (Field 894.00).
+- Vigorous: Number of days/week of vigorous physical activity 10+ minutes (Field 904.00) and Duration of vigorous activity (Field 914.00).
+
+The sum of them gives the IPAQ score. Let's compute it in R.
+
+This work is done on the **Inode server**, the file I get is transfered locally using ssh.
+```{r, eval=FALSE}
+# good repertory
+ssh uqyholtz@inode.qbi.uq.edu.au
+cd /ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS/0_DATA
+
+# Get the good column + repeat the ID + change header to respect plink format
+zcat /references/UKBiobank/pheno/download/9280_12505_UKBiobank.tab.gz | awk '{print $1,$1,$8,$22,$280,$283,$286,$289,$292,$295}' > tmp
+
+# Transfert locally
+cd /Users/y.holtz/Desktop
+scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/0_DATA/tmp .
+
+# Open this file in R, and compute IPAQ
+R
+data <- read.table("tmp.gz",  header=T, sep=" ")
+a <- data$`f.864.0.0` * data$`f.874.0.0` * 3.3
+b <- data$`f.884.0.0` * data$`f.894.0.0` * 4
+c <- data$`f.904.0.0` * data$`f.914.0.0` * 8
+data$IPAQ <- a + b + c
+colnames(data)[c(1,2)] <- c("FID", "IID")
+  
+# Number of missing data?
+length(which(is.na(data$IPAQ)))
+
+# Save with new score
+write.table(data, file="UKB_IPAQ_score.txt", row.names=FALSE, quote=FALSE)
+
+# Send it on Delta
+scp  UKB_IPAQ_score.txt  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/DATA/PHENOTYPE/UKB
+```
 
 
 

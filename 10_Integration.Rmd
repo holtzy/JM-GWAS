@@ -1,0 +1,204 @@
+---
+title: "Integrating all the information"
+author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+---
+
+
+<br><br>
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# A few library
+library(tidyverse)
+library(DT)
+library(hrbrthemes)
+library(ggrepel)
+```
+
+>This document applies the SMR tool on both the Expression and Methylation data in the same time. It also takes into account the descriptive classification of chromatin.
+
+
+
+
+
+
+#- Method
+***
+I'm gonna use the methylation data located on Delta at `/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy`
+
+I run SMR on it, like I've done for eQTL data.
+
+
+
+
+
+
+#- Run SMR {.tabset}
+***
+
+Run SMR on both expression and methylation datasets in the same time.
+
+## Chromo 11 ~ 15Mb
+```{r, eval=FALSE}
+# Good folder
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
+
+# list of option and file:
+ref="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC"
+sum="/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma"
+METHY="/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11"
+rug="/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense"
+genelist="/shares/compbio/Group-Wray/YanHoltz/DATA/GENE_POSITION/glist_hg19_refseq.txt"
+probe="ENSG00000152270"
+window="1000"
+psmr="5e-8"
+thread="6"
+out="./integration_result_Chr11_15Mb"
+
+# Run the analysis
+tmp_command="smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread"
+qsubshcom "$tmp_command" 1 30G smr_integration 10:00:00 ""
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA/SMR_PLOT_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/* .
+```
+
+
+
+## Chromo 11 ~ 71Mb
+```{r, eval=FALSE}
+# Good folder
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
+
+# list of option and file:
+ref="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC"
+sum="/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma"
+METHY="/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11"
+rug="/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense"
+genelist="/shares/compbio/Group-Wray/YanHoltz/DATA/GENE_POSITION/glist_hg19_refseq.txt"
+probe="ENSG00000254682"
+window="1000"
+psmr="5e-8"
+thread="6"
+out="./integration_result_Chr11_71Mb"
+
+# Run the analysis
+tmp_command="smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread"
+qsubshcom "$tmp_command" 1 30G smr_integration 10:00:00 ""
+
+# Transfer locally
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA/SMR_PLOT_DATA
+scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/* .
+```
+
+
+
+
+
+
+#- Make the plot {.tabset}
+***
+
+How to read the plots (from top to bottom):
+
+- GWAS layer, 
+    - **grey dots** = SNPs. Y axis shows their GWAS P-value.
+    - **maroon rhombus** = gene expression probe. **navy cycle** = methylation probe. Y axis shows their SMR P-value.
+    - **solid** = passed HEIDI threshold. **hollow** = did not pass.
+    
+- eQTL layers, 
+    - One graphic for each probe that passed the **e**SMR and HEIDI tests
+    - **maroon cross** = SNPs. The Y axis show their eQTL pvalue = how much this SNP is linked with the gene expression.
+
+- mQTL layers, 
+    - One graphic for each probe that passed the **m**SMR and HEIDI tests
+    - **blue cycles** = SNPs. The Y axis show their mQTL pvalue = how much this SNP is linked with the gene expression.
+
+- Chromatin layer,
+    - Each row of the heatmap show one of the 127 sample from the [Roadmap Epigenomics Mapping Consortium](http://www.roadmapepigenomics.org) (REMC)
+    - Each column is a SNP. Its position on the X axis is a proxy of its position on the chromosome.
+    - The color of the square gives the function of the SNP, deduced from chromatin state. [Legend detail here](http://egg2.wustl.edu/roadmap/web_portal/imputed.html#chr_imp). Tx = Transcription. Red=promotor.
+    - Left color bar: each sample has been observed for a specific tissue. For example, over the 127 samples, about 13 have had measurment in blood & T-cell.
+    
+
+```{r, eval=FALSE}
+# good folder
+cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
+
+# Create an R script to make the plot for a specific region and put it in a file script.R:
+# Read the data file in R:
+args <- commandArgs(TRUE)
+input <- args[1]
+output <- args[2]
+source("/shares/compbio/Group-Wray/YanHoltz/SOFT/plot_OmicsSMR_24_April.r")
+SMRData = ReadomicSMRData(input)
+
+# Plot
+pdf(output, height=10, width=8)
+omicSMRLocusPlot(data=SMRData,
+                 
+                 # Threshold for SMR tests:
+                 esmr_thresh=0.1, msmr_thresh=0.1, m2esmr_thresh=0.1,
+                 
+                 # Threshold for HEIDI tests:
+                 esmr_heidi = 0, msmr_heidi = 0, m2esmr_heidi = 0,
+                 
+                 # Other features
+                 max_anno_probe = 6, anno_methyl=TRUE, max_plot_mprobe = 1, window = 700, epi_plot=T )
+dev.off()
+
+# Send the script for all the regions I need.
+tmp_command="Rscript script.R /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/integration_result_Chr11_15Mb.ENSG00000152270.txt plot_integ_ENSG00000152270.pdf"
+qsubshcom "$tmp_command" 1 10G smr_plot 10:00:00 ""
+
+tmp_command="Rscript script.R /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/integration_result_Chr11_71Mb.ENSG00000254682.txt plot_integ_ENSG00000254682.pdf"
+qsubshcom "$tmp_command" 1 10G smr_plot 10:00:00 ""
+
+
+# Trasfer result locally
+cd
+scp y.holtz@delta.imb.uq.edu.au://shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/*pdf .
+```
+
+## Chromo 11 ~ 15Mb
+
+<img src="IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf" alt="some text"  width="4200" height="4200">
+
+## Chromo 11 ~ 71 Mb
+
+<img src="IMG/SMR_PLOT/plot_integ_ENSG00000254682.pdf" alt="some text"  width="4200" height="4200">
+
+
+
+
+
+
+
+
+
+Detail of function arguments:
+```{r, eval=FALSE}
+# Plot caractéristics
+data=SMRData
+esmr_thresh=0.05
+msmr_thresh=0.05
+m2esmr_thresh=0.05
+esmr_heidi = 0
+msmr_heidi = 0
+m2esmr_heidi = 0
+probeNEARBY=c("ENSG00000152270")
+interest_only=T
+max_anno_probe = 6
+anno_methyl=T
+max_plot_mprobe = 1
+window = 700
+epi_plot=T
+esmr_thresh_plot=NULL
+msmr_thresh_plot=NULL
+highlight=NULL
+pointsize=20
+anno_self=TRUE
+ASO=TRUE
+anno_dist=1.05
+trait_name=NULL
+```
+

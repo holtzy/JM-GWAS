@@ -21,6 +21,8 @@ navbar:
       href: 8_mtCOJO.html
     - text: "Methylation"
       href: 9_Methylation.html
+    - text: "Integration"
+      href: 10_Integration.html
     - text: "Xia et al"
       href: 5_XIA_et_al.html
 

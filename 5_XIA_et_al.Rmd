@@ -4,14 +4,7 @@ author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d 
 ---
 
 
-
-
-
-```{r echo=FALSE}
-# Just to add space between the introduction of the document
-knitr::asis_output(htmltools::htmlPreserve("<br><br>"))
-knitr::opts_chunk$set(echo = TRUE, fig.align="center")
-```
+<br><br>
 
 
 
@@ -172,22 +165,22 @@ There are 6 main associations:
 
 <br><br>
 
-###rs3755967
+##rs3755967
 ![](IMG/VitaminD_XiaEtAl.rs3755967.png)
 
-###rs12785878
+##rs12785878
 ![](IMG/VitaminD_XiaEtAl.rs12785878.png)
 
-###rs10741657
+##rs10741657
 ![](IMG/VitaminD_XiaEtAl.rs10741657.png)
 
-###rs17216707
+##rs17216707
 ![](IMG/VitaminD_XiaEtAl.rs17216707.png)
 
-###rs10745742
+##rs10745742
 ![](IMG/VitaminD_XiaEtAl.rs10745742.png)
 
-###rs8018720
+##rs8018720
 ![](IMG/VitaminD_XiaEtAl.rs8018720.png)
 
 

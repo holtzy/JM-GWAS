@@ -36,59 +36,66 @@ I run SMR on it, like I've done for eQTL data.
 
 Run SMR on both expression and methylation datasets in the same time.
 
-## Chromo 11 ~ 15Mb
 ```{r, eval=FALSE}
+# General parameters
 # Good folder
 cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
 
 # list of option and file:
 ref="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC"
 sum="/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma"
-METHY="/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11"
-rug="/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense"
+rug="/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/WITH_GENE_NAME/rug_32k_cis"
 genelist="/shares/compbio/Group-Wray/YanHoltz/DATA/GENE_POSITION/glist_hg19_refseq.txt"
-probe="ENSG00000152270"
 window="1000"
 psmr="5e-8"
 thread="6"
+```
+
+
+## Chromo 11 ~ 15Mb
+```{r, eval=FALSE}
+# list of option and file:
+METHY="/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11"
+probe="ENSG00000152270"
 out="./integration_result_Chr11_15Mb"
 
 # Run the analysis
 tmp_command="smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread"
 qsubshcom "$tmp_command" 1 30G smr_integration 10:00:00 ""
-
-# Transfer locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA/SMR_PLOT_DATA
-scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/* .
 ```
 
 
 
 ## Chromo 11 ~ 71Mb
 ```{r, eval=FALSE}
-# Good folder
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION
-
 # list of option and file:
-ref="/gpfs/gpfs01/polaris/Q0286/UKBiobank/v2EURu_HM3/ukbEURu_imp_chr11_v2_HM3_QC"
-sum="/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.ma"
 METHY="/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11"
-rug="/shares/compbio/Group-Wray/YanHoltz/DATA/EQTL/eQTL_DATA_EQTLGEN_CONSORTIUM_32K/cis-eQTLs-full_formatted.txt_besd-dense"
-genelist="/shares/compbio/Group-Wray/YanHoltz/DATA/GENE_POSITION/glist_hg19_refseq.txt"
 probe="ENSG00000254682"
-window="1000"
-psmr="5e-8"
-thread="6"
 out="./integration_result_Chr11_71Mb"
 
 # Run the analysis
 tmp_command="smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread"
 qsubshcom "$tmp_command" 1 30G smr_integration 10:00:00 ""
-
-# Transfer locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA/SMR_PLOT_DATA
-scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/* .
 ```
+
+## Chromo 4
+
+It is not possible to create a figure for the chromosome 4 loci since there is no eSMR significant result.
+```{r, eval=FALSE}
+# list of option and file:
+METHY="/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr4"
+probe="ENSG00000080493"
+out="./integration_result_Chr4"
+
+window="4000"
+
+# Run the analysis
+tmp_command="smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $METHY  --beqtl-summary $rug --plot --probe $probe --probe-wind $window --gene-list $genelist --psmr $psmr --out $out --thread-num $thread"
+qsubshcom "$tmp_command" 1 30G smr_integration 10:00:00 ""
+```
+
+
+
 
 
 
@@ -119,6 +126,11 @@ How to read the plots (from top to bottom):
     - The color of the square gives the function of the SNP, deduced from chromatin state. [Legend detail here](http://egg2.wustl.edu/roadmap/web_portal/imputed.html#chr_imp). Tx = Transcription. Red=promotor.
     - Left color bar: each sample has been observed for a specific tissue. For example, over the 127 samples, about 13 have had measurment in blood & T-cell.
     
+<br>
+
+**IMPORTANT NOTE**: I made this plot with a HEIDI threshold of 0 = all significant to avoid a bug in the script.
+
+<br>
 
 ```{r, eval=FALSE}
 # good folder
@@ -137,7 +149,7 @@ pdf(output, height=15, width=18)
 omicSMRLocusPlot(data=SMRData,
                  
                  # Threshold for SMR tests:
-                 esmr_thresh=0.1, msmr_thresh=0.1, m2esmr_thresh=0.1,
+                 esmr_thresh=6.4*10^-6, msmr_thresh=5.9*10^-07, m2esmr_thresh=5.9*10^-07,
                  
                  # Threshold for HEIDI tests:
                  esmr_heidi = 0, msmr_heidi = 0, m2esmr_heidi = 0,
@@ -153,23 +165,106 @@ qsubshcom "$tmp_command" 1 10G smr_plot 10:00:00 ""
 tmp_command="Rscript script.R /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/plot/integration_result_Chr11_71Mb.ENSG00000254682.txt plot_integ_ENSG00000254682.pdf"
 qsubshcom "$tmp_command" 1 10G smr_plot 10:00:00 ""
 
-
 # Trasfer result locally
-cd
+cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/IMG/SMR_PLOT
 scp y.holtz@delta.imb.uq.edu.au://shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/*pdf .
 ```
 
-## Chromo 11 ~ 15Mb
 
-<img src="IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf" alt="some text"  width="4200" height="4200">
+
+
+
+
+
+
+
+
 
 ## Chromo 11 ~ 71 Mb
+
+[Click for high resolution](https://github.com/holtzy/VitaminD-GWAS/raw/master/IMG/SMR_PLOT/plot_integ_ENSG00000254682.pdf)
 
 <img src="IMG/SMR_PLOT/plot_integ_ENSG00000254682.pdf" alt="some text"  width="4200" height="4200">
 
 
+**Observation**
+
+- The most associated SNP with Vitamin D is `rs12785878`, position 71,167,449. Its allele `T` is associated with a higher vitamin D concentration.
+- This association takes place exactly at the promoter regions of DHCR7 and NADSYN1: zooming on the chromatin layers you can see 2 red lines.
+
+<br>
+
+- Its neighbour SNP rs736894 in position 71,152,258 controls the expression of the DHCR7 gene. Allele T = less vitaminD (GWAS) and less expression of DHCR7.
+- 4 eQTL are available in this region, targeting genes FAM86C1 (ctrl by rs7117703, pos=71,464,076), NADSYN1 (ctrl by rs12800438, pos=71,171,003), DHCR7 (ctrl by rs736894, pos=71,152,258) and AP002387.2 (ctrl by rs7944926, pos=71,165,625). 
+- NADSYN1, DHCR7 and AP002387.2 are detected by the SMR test, however only DHCR7 pass the HEIDI test. (AP002387.2 is not far from passing it)
+- These eQTL results are ~ replicated in the GTEx dataset. Moreover, the expression of KRTAP genes is detected as causal for vitaminD in brain tissues as well. This is of interest since DHCR7 functionnal annotation is `transcript` in every tissue EXCEPT brain where it is Enha = `Enhancer` and EnhW = `Weak Enhancer.
+
+<br>
+
+- Methylation of both NADSYN1 (3 probes & 3 snps) and DHCR7 (1 probe, 1 SNP) seem to be linked with vitamin-D concentration.
+- It is interesting to notice that SNP rs736894 is linked with **both** expression of DHCR7 (see above) and methylation of NADSYN1.
+
+<br><br>
+
+**Litterature**
+
+- Need to read [this publication](https://watermark.silverchair.com/ddw417.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAAb0wggG5BgkqhkiG9w0BBwagggGqMIIBpgIBADCCAZ8GCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMB0_BlgZGRoKS1Ud5AgEQgIIBcPBV55sS4vIZ2iWGJ2i2T4neg14cxV8YcEl1CMxGuUKdcHctfuDm0EOm08R9ZZs6Bz4KNK8f66OcCRNfprUTW6jiycf87bKCf0zmNcbPxXrtAMhhP41Z2390M1GZ5tr-0_anbhoHyzfVEAJMmDVL-S__TXrBL8A4VR7cygozGplawT5iR1UXRLplAowrwSLW7Lpnh0fqxDZCLHR3Ai_i0kh6hPzbHB1YchPxJFIqjfTwK-loUeHckaZf92EWN75oY75UPc6EVDcSSrQEnJp_A2A6S_jh6auxcjhHjwoiaE5VNWZCXLoqmjK68aZCso-f9-g4V_vJYmV9yn_a-DyVForG0_Y8cSp9uPycs3vNOFGliyNVubQKeTDf5hMATHo4ZXMMJUXWBlSEqeUsY70D8eHlxa-odxNXtodb5opCM_bcUUYbTtJ_hJrFgDAAvW0QlGpZzGgucwEKWaktXytVzDjG6sr_soOQg5Aq7Aj6gOxv) which goes deep into this loci.
+
+- Gene NADSYN1: 
+    - Nicotinamide adenine dicnucleotide (NAD) is a co-enzyme in metabolic redox reactions, a precursor for several cell signaling molecules, and a substrate for protein posttranslational modifications. 
+    - code for the Glutamine-dependent NAD(+) synthetase. This enzyme catalyzes the final step in the biosynthesis of NAD from nicotinic acid adenine dinucleotide (NaAD)
+    - Also has a known effect on systemic lupus erythematosus.
+    
+    
+- Gene RP11--660L16.2 = AP002387.1 ?: 
+    - Known antisense RNA.
+
+- Gene DHCR7: a 7-dehydrocholesterol reductase: it is involved in the cholesterol pathway. Its role is hydroxylation.
 
 
+
+
+
+
+
+
+
+## Chromo 11 ~ 15Mb
+
+[Click for high resolution](https://github.com/holtzy/VitaminD-GWAS/raw/master/IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf)
+
+<img src="IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf" alt="some text"  width="4200" height="4200">
+
+
+**Observation**
+
+- The most associated SNP with Vitamin D is rs10741657, position 14,914,878. Allele A = more VitaminD. 
+- It is exactly in the promoter region of the CYP2R1 gene (red line in the chromatin layer if you zoom on the figure).
+
+<br>
+
+- There are 5 eQTL in this zone, for genes RRAS2 (ctrl by rs2970333, pos=14,331,627), COPB1 (ctrl by rs2575859, pos=14,510,736), PDE3B (ctrl by rs11023374, pos=14,903,636), CYP2R1 (ctrl by rs2060793, pos=14,915,310) and INSC (ctrl by rs1540151, pos=15,220,073).
+- 3 of them are detected by SMR: RRAS2, PDE3B and CYP2R1.
+- But none of them pass the HEIDI test.
+- GTEx data does no give any other information.
+
+<br>
+
+- Methylation of RRAS2 (3 probes, snp rs11023197, rs10832242), COPB1 (2 probes, snp rs10832276, rs1553006) and CYP2R1 (2 probes, snp rs1553006) seem to be linked with Vitamin-D.
+
+
+
+
+
+
+
+
+
+
+
+
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 
 

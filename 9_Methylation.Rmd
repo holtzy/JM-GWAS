@@ -82,7 +82,9 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 #- Result {.tabset}
 ***
 
-Significant SMR results are found in 3 genetic regions. These 3 regions are also detected by the Vitamin D GWAS.
+Significant SMR results are found in 3 genetic regions. These 3 regions are also detected by the Vitamin D GWAS.  
+  
+Threshold used for significance: 0.05 / # of Methylation association = 0.05 / `r  nrow(data)` = `r 0.05/nrow(data)`
 ```{r, warning=FALSE}
 # Compute signif threshold
 thres <- 0.05 / nrow(data)

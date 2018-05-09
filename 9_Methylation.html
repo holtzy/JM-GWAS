@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 08 May 2018" />
+<meta name="author" content="by Yan Holtz - 09 May 2018" />
 
 
 <title>Using Methylation data</title>
@@ -221,6 +221,9 @@ $(document).ready(function () {
   <a href="9_Methylation.html">Methylation</a>
 </li>
 <li>
+  <a href="10_Integration.html">Integration</a>
+</li>
+<li>
   <a href="5_XIA_et_al.html">Xia et al</a>
 </li>
       </ul>
@@ -242,7 +245,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Using Methylation data</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 08 May 2018</em></h4>
+<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 09 May 2018</em></h4>
 
 </div>
 
@@ -295,6 +298,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 <h1><span class="header-section-number">4</span> - Result</h1>
 <hr />
 <p>Significant SMR results are found in 3 genetic regions. These 3 regions are also detected by the Vitamin D GWAS.</p>
+<p>Threshold used for significance: 0.05 / # of Methylation association = 0.05 / 85334 = 5.859329210^{-7}</p>
 <pre class="r"><code># Compute signif threshold
 thres &lt;- 0.05 / nrow(data)</code></pre>
 <div id="chromo-4-gc" class="section level2">

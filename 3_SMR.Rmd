@@ -121,7 +121,7 @@ There are 5 eQTL in the region of the GC gene = on chromosome 4 between 71 and 7
 ```{r}
 eqtlgen %>% 
   filter(topSNP_chr==4) %>%
-  filter(topSNP_bp>71000000 & topSNP_bp<73000000) %>%
+  filter(topSNP_bp>71000000 & topSNP_bp<74000000) %>%
   dplyr::select(hgnc_symbol, description, ProbeChr, Probe_bp, topSNP, topSNP_bp, A1, A2, Freq, p_eQTL)
 ```
 
@@ -222,7 +222,7 @@ The SMR threshold used in our study takes into account multiple testing. It is t
 
 ```{r}
 thres <- (0.05 / nrow(eqtlgen))
-eqtlgen %>% filter(p_SMR < thres )
+eqtlgen %>% filter(p_SMR < thres ) %>% arrange(ProbeChr, Probe_bp)
 ```
 
 Three associations are located at 2 regions detected in the GWAS analysis.

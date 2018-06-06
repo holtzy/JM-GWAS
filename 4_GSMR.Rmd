@@ -105,8 +105,15 @@ echo "vitaminD /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GW
 
 # prepare ONE file that lists all the outcomes. This file has been build in Excel format locally
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp list_of_traits_GSMR.csv y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
-more list_of_traits_GSMR.csv | awk 'BEGIN{FS=","}{print $2, "\t", $3"/"$4}' > gsmr_outcome.txt
+R
+library(gdata)
+tmp <- read.xls("list_of_traits_GSMR.xlsx", header=T)
+tmp <- tmp[ , c("Trait","File")]
+tmp$File <- paste("/shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/", tmp$File, sep="")
+write.table(tmp, file="list_of_traits_GSMR.txt", row.names=FALSE, quote=FALSE, sep="\t")
+q("no")
+scp list_of_traits_GSMR.txt y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/3_GSMR
+cat list_of_traits_GSMR.txt | sed 's/ /_/g' > gsmr_outcome.txt
 
 # Split this file: one file per outcome:
 split -l 1 --numeric-suffixes gsmr_outcome.txt 

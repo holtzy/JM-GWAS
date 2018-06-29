@@ -1,7 +1,11 @@
 ---
-title: "Using Methylation data"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Application of mendelian randomization methods using methylation data"
 ---
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 
 <br><br>
@@ -13,11 +17,8 @@ library(hrbrthemes)
 library(ggrepel)
 ```
 
->This document applies the SMR tools to methylation data. 
 
-
-
-#- Method
+#Method
 ***
 I'm gonna use the methylation data located on Delta at `/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy`
 
@@ -27,7 +28,7 @@ I run SMR on it, like I've done for eQTL data.
 
 
 
-#- DNA methylation data description {.tabset}
+#DNA methylation data description {.tabset}
 ***
 ```{r, warning=FALSE}
 # load data
@@ -52,7 +53,7 @@ table(data$ProbeChr) %>%
 
 
 
-#- Run SMR
+#Run SMR
 ***
 The first step of SMR consists to run the algorythm on every significant mQTL (mQTL = significant relationship between a SNP allele and the methylation of a gene). For each gene involved in an mQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.
 
@@ -79,7 +80,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 
 
 
-#- Result {.tabset}
+#Result {.tabset}
 ***
 
 Significant SMR results are found in 3 genetic regions. These 3 regions are also detected by the Vitamin D GWAS.  

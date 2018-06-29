@@ -1,12 +1,15 @@
 ---
-title: "GWAS"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Running a GWAS on vitamin D concentration"
 ---
+<hr>
 
-<br><br><br>
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
 
+<hr>
 
->This document describes a GWAS realised on the [IPAQ SCORE]() data of the [UKBiobank](http://www.ukbiobank.ac.uk) dataset. It runs the GWAS using both [Plink](https://www.cog-genomics.org/plink2) and [Bolt](http://www.thetasolutionsllc.com/bolt-software.html). Summary statistics are described. They are then use as input to the [FUMA](http://fuma.ctglab.nl) and [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) website for further analysis. 
+<br><br>
+
+This document describes a GWAS realised on the [IPAQ SCORE]() data of the [UKBiobank](http://www.ukbiobank.ac.uk) dataset. It runs the GWAS using both [Plink](https://www.cog-genomics.org/plink2) and [Bolt](http://www.thetasolutionsllc.com/bolt-software.html). Summary statistics are described. They are then use as input to the [FUMA](http://fuma.ctglab.nl) and [Locus Zoom](http://locuszoom.org/genform.php?type=yourdata) website for further analysis. 
 
 
 
@@ -294,12 +297,12 @@ scp  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/2_CLUMPING/BOLT/result
 
 ```{r, warning=F, message=F}
 # Read result
-data=read_delim("0_DATA/result_GWAS_bloodpressure_plink.linear.gz", col_names=T, delim=" ")
+data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.gz", col_names=T, delim=" ")
 data$CHR=as.factor(data$CHR)
 #data=data[ sample(seq(1,nrow(data)), 10000) , ]
 
 # Read after clumping data
-clump=read.table("0_DATA/result_GWAS_bloodpressure_plink_clumped", header=T)
+clump=read.table("0_DATA/result_GWAS_VitaminD_XiaEtAl_clumped", header=T)
 
 # A list of all SNPs implicated in an association? 
 Hit_SNP <- c( 
@@ -437,12 +440,12 @@ data %>% ggplot(aes(x=BETA)) + geom_histogram(bins=200) +xlim(-2,2)
 
 ```{r, warning=F, message=F}
 # Read result
-data=read_delim("0_DATA/result_GWAS_bloodpressure_bolt.linear.gz", col_names=T, delim=" ")
+data=read_delim("0_DATA/GWAS_vitaminD_XiaEtAL.linear.gz", col_names=T, delim=" ")
 data$CHR=as.factor(data$CHR)
 #data=data[ sample(seq(1,nrow(data)), 10000) , ]
 
 # Read after clumping data
-clump=read.table("0_DATA/result_GWAS_bloodpressure_bolt_clumped", header=T)
+clump=read.table("0_DATA/result_GWAS_VitaminD_XiaEtAl_clumped", header=T)
 clump <- clump %>% filter(P<10e-8)
 
 # A list of all SNPs implicated in an association? 

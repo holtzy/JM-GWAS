@@ -9,10 +9,9 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 23 May 2018" />
 
 
-<title>Integrating all the information</title>
+<title>Mendelian randomization: integrating expression and methylation results</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -209,13 +208,7 @@ $(document).ready(function () {
   <a href="3_SMR.html">SMR</a>
 </li>
 <li>
-  <a href="4_GSMR.html">GSMR</a>
-</li>
-<li>
   <a href="7_PRS.html">PRS</a>
-</li>
-<li>
-  <a href="8_mtCOJO.html">mtCOJO</a>
 </li>
 <li>
   <a href="9_Methylation.html">Methylation</a>
@@ -230,7 +223,6 @@ $(document).ready(function () {
     </div><!--/.nav-collapse -->
   </div><!--/.container -->
 </div><!--/.navbar -->
-<a href="https://github.com/holtzy/" class="github-corner" aria-label="View source on Github"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#2ecc71; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 
 <div class="fluid-row" id="header">
 
@@ -244,24 +236,23 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Integrating all the information</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 23 May 2018</em></h4>
+<h1 class="title toc-ignore">Mendelian randomization: integrating expression and methylation results</h1>
 
 </div>
 
 
+<hr>
+<p><em>Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath</em></p>
+<hr>
 <p><br><br></p>
-<blockquote>
-<p>This document applies the SMR tool on both the Expression and Methylation data in the same time. It also takes into account the descriptive classification of chromatin.</p>
-</blockquote>
 <div id="method" class="section level1">
-<h1><span class="header-section-number">1</span> - Method</h1>
+<h1>Method</h1>
 <hr />
-<p>I’m gonna use the methylation data located on Delta at <code>/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy</code></p>
-<p>I run SMR on it, like I’ve done for eQTL data.</p>
+<p>This document applies the SMR tool on both the Expression and Methylation data in the same time. It also takes into account the descriptive classification of chromatin.</p>
+<p>Methylation and expression dataset are extensively described in the previous tabs.</p>
 </div>
 <div id="run-smr" class="section level1 tabset">
-<h1><span class="header-section-number">2</span> - Run SMR</h1>
+<h1>Run SMR</h1>
 <hr />
 <p>Run SMR on both expression and methylation datasets in the same time.</p>
 <pre class="r"><code># General parameters
@@ -277,7 +268,7 @@ window=&quot;1000&quot;
 psmr=&quot;5e-8&quot;
 thread=&quot;6&quot;</code></pre>
 <div id="chromo-11-15mb" class="section level2">
-<h2><span class="header-section-number">2.1</span> Chromo 11 ~ 15Mb</h2>
+<h2>Chromo 11 ~ 15Mb</h2>
 <pre class="r"><code># list of option and file:
 METHY=&quot;/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11&quot;
 probe=&quot;ENSG00000152270&quot;
@@ -288,7 +279,7 @@ tmp_command=&quot;smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $ME
 qsubshcom &quot;$tmp_command&quot; 1 30G smr_integration 10:00:00 &quot;&quot;</code></pre>
 </div>
 <div id="chromo-11-71mb" class="section level2">
-<h2><span class="header-section-number">2.2</span> Chromo 11 ~ 71Mb</h2>
+<h2>Chromo 11 ~ 71Mb</h2>
 <pre class="r"><code># list of option and file:
 METHY=&quot;/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr11&quot;
 probe=&quot;ENSG00000254682&quot;
@@ -299,7 +290,7 @@ tmp_command=&quot;smr_Linux --bfile $ref --gwas-summary $sum --beqtl-summary $ME
 qsubshcom &quot;$tmp_command&quot; 1 30G smr_integration 10:00:00 &quot;&quot;</code></pre>
 </div>
 <div id="chromo-4" class="section level2">
-<h2><span class="header-section-number">2.3</span> Chromo 4</h2>
+<h2>Chromo 4</h2>
 <p>It is not possible to create a figure for the chromosome 4 loci since there is no eSMR significant result.</p>
 <pre class="r"><code># list of option and file:
 METHY=&quot;/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy/bl_meqtl_cis_std_chr4&quot;
@@ -314,7 +305,7 @@ qsubshcom &quot;$tmp_command&quot; 1 30G smr_integration 10:00:00 &quot;&quot;</
 </div>
 </div>
 <div id="make-the-plot" class="section level1 tabset">
-<h1><span class="header-section-number">3</span> - Make the plot</h1>
+<h1>Make the plot</h1>
 <hr />
 <p>How to read the plots (from top to bottom):</p>
 <ul>
@@ -381,7 +372,7 @@ qsubshcom &quot;$tmp_command&quot; 1 10G smr_plot 10:00:00 &quot;&quot;
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/IMG/SMR_PLOT
 scp y.holtz@delta.imb.uq.edu.au://shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/10_INTEGRATION/*pdf .</code></pre>
 <div id="chromo-11-71-mb" class="section level2">
-<h2><span class="header-section-number">3.1</span> Chromo 11 ~ 71 Mb</h2>
+<h2>Chromo 11 ~ 71 Mb</h2>
 <p><a href="https://github.com/holtzy/VitaminD-GWAS/raw/master/IMG/SMR_PLOT/plot_integ_ENSG00000254682.pdf">Click for high resolution</a></p>
 <p><img src="IMG/SMR_PLOT/plot_integ_ENSG00000254682.pdf" alt="some text"  width="4200" height="4200"></p>
 <p><strong>Observation</strong></p>
@@ -419,7 +410,7 @@ scp y.holtz@delta.imb.uq.edu.au://shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 </ul>
 </div>
 <div id="chromo-11-15mb-1" class="section level2">
-<h2><span class="header-section-number">3.2</span> Chromo 11 ~ 15Mb</h2>
+<h2>Chromo 11 ~ 15Mb</h2>
 <p><a href="https://github.com/holtzy/VitaminD-GWAS/raw/master/IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf">Click for high resolution</a></p>
 <p><img src="IMG/SMR_PLOT/plot_integ_ENSG00000152270.pdf" alt="some text"  width="4200" height="4200"></p>
 <p><strong>Observation</strong></p>

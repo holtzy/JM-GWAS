@@ -9,10 +9,9 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 23 May 2018" />
 
 
-<title>LD Score Regression</title>
+<title>Using LD Score regression to assess heritability and population stratification</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -209,13 +208,7 @@ $(document).ready(function () {
   <a href="3_SMR.html">SMR</a>
 </li>
 <li>
-  <a href="4_GSMR.html">GSMR</a>
-</li>
-<li>
   <a href="7_PRS.html">PRS</a>
-</li>
-<li>
-  <a href="8_mtCOJO.html">mtCOJO</a>
 </li>
 <li>
   <a href="9_Methylation.html">Methylation</a>
@@ -230,7 +223,6 @@ $(document).ready(function () {
     </div><!--/.nav-collapse -->
   </div><!--/.container -->
 </div><!--/.navbar -->
-<a href="https://github.com/holtzy/" class="github-corner" aria-label="View source on Github"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#2ecc71; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 
 <div class="fluid-row" id="header">
 
@@ -244,18 +236,18 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">LD Score Regression</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 23 May 2018</em></h4>
+<h1 class="title toc-ignore">Using LD Score regression to assess heritability and population stratification</h1>
 
 </div>
 
 
+<hr>
+<p><em>Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath</em></p>
+<hr>
 <p><br><br></p>
-<blockquote>
-<p>This document report the application of <a href="%22https://github.com/bulik/ldsc%22">LDSC</a> to the vitamin D GWAS result. It aims to determine the heritability of the trait and check the genetic correlation of vitamin D with several mental disorders.</p>
-</blockquote>
+<p>This document report the application of <a href="%22https://github.com/bulik/ldsc%22">LDSC</a> to the vitamin D GWAS result. It aims to determine the heritability of the trait and the potential population stratification.</p>
 <div id="installing-ldsc" class="section level1">
-<h1><span class="header-section-number">1</span> - Installing LDSC</h1>
+<h1>Installing LDSC</h1>
 <hr />
 <p>I lost a few hours of my life installing the <a href="%22https://github.com/bulik/ldsc%22">LDSC software</a> properly. Here are a few hints to do it faster next time. Important:</p>
 <ul>
@@ -281,7 +273,7 @@ wget https://data.broadinstitute.org/alkesgroup/LDSCORE/eur_w_ld_chr.tar.bz2
 tar -xvjf eur_w_ld_chr.tar.bz2</code></pre>
 </div>
 <div id="heritability-and-ld-score-regression-intercept." class="section level1">
-<h1><span class="header-section-number">2</span> - Heritability and LD Score Regression Intercept.</h1>
+<h1>Heritability and LD Score Regression Intercept.</h1>
 <hr />
 <p>I can use <code>LD score regression</code> to study the the inflation in test statistics due to population structure.</p>
 <p>For the Vitamin D GWAS, the intercept of the LD score regression is <strong>1.0202</strong> with a standard error of 0.0068. The ratio is <strong>0.1604</strong> with a standard error of 0.0538.</p>
@@ -312,155 +304,13 @@ cat /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD
 # Check result
 more output_h2.log</code></pre>
 </div>
-<div id="compute-genetic-correlation" class="section level1">
-<h1><span class="header-section-number">3</span> - Compute Genetic correlation</h1>
-<hr />
-<p>Script to do it for one file</p>
-<pre class="r"><code># Good folder
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/4_LDSC/GENET_COR
-
-# GWAS result at good format: snpid hg18chr bp a1 a2 or se pval info ngt CEUaf
-cat /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma | awk &#39;{print $1, $2, $3, $7, $5, $8}&#39; &gt; input.txt
-zcat /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/alzheimers_igap_2013.txt.gz | awk &#39;{print $1, $2, $3, $7, $5, $8}&#39; &gt; alz.txt
-
-# Munge. Be careful to call the python version which is IN ldsc.
-/shares/compbio/Group-Wray/YanHoltz/SOFT/anaconda3/envs/ldsc/bin/python /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/munge_sumstats.py \
---sumstats input.txt \
---out input \
---merge-alleles /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/w_hm3.snplist
-
-# Munge. Be careful to call the python version which is IN ldsc.
-/shares/compbio/Group-Wray/YanHoltz/SOFT/anaconda3/envs/ldsc/bin/python /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/munge_sumstats.py \
---sumstats alz.txt \
---N 79000 \
---out alz \
---merge-alleles /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/w_hm3.snplist
-
-# LD Score Regression
-/shares/compbio/Group-Wray/YanHoltz/SOFT/anaconda3/envs/ldsc/bin/python /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/ldsc.py \
---rg input.sumstats.gz,alz.sumstats.gz \
---ref-ld-chr /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/ \
---w-ld-chr /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/ \
---out vitD_alz</code></pre>
-<p>To do it on every GWAS result of my analysis</p>
-<pre class="r"><code># Good folder
-cd /shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/4_LDSC/GENET_COR
-
-# Reformat and mudge each GWAS summary statistics you wanna study
-for i in /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/GWAS_SUMSTAT/* ; do
-  filename=$(echo $i | sed &#39;s/.*UMSTAT\///&#39; | sed &#39;s/.gz//&#39;) ;
-  echo $filename
-  echo &quot;zcat $i | awk &#39;{print \$1, \$2, \$3, \$7, \$5, \$8}&#39; &gt; ${filename}_ready&quot; &gt; script_${filename}
-  echo &quot;/shares/compbio/Group-Wray/YanHoltz/SOFT/anaconda3/envs/ldsc/bin/python /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/munge_sumstats.py --sumstats ${filename}_ready --out ${filename} --merge-alleles /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/w_hm3.snplist&quot; &gt;&gt; script_${filename}
-  chmod 777 script_${filename}
-  tmp_command=$(echo ./script_${filename})
-  echo $tmp_command
-  qsubshcom &quot;$tmp_command&quot; 1 5G mudge 10:00:00 &quot;&quot;
-done
-
-# Idem for Vitamin D
-cat /shares/compbio/Group-Wray/YanHoltz/DATA/GWAS/XiaEtAl_VitaminD/GWAS_vitaminD_XiaEtAL.ma | awk &#39;{print $1, $2, $3, $7, $5, $8}&#39; &gt; input.txt
-/shares/compbio/Group-Wray/YanHoltz/SOFT/anaconda3/envs/ldsc/bin/python /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/munge_sumstats.py \
---sumstats input.txt \
---out input \
---merge-alleles /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/w_hm3.snplist
-
-# Clean
-rm *ready *log script*
-
-# Run LD score regression for all of them
-for i in *sumstats.gz ; do
-  filename=$(echo $i | sed &#39;s/.sumstats.gz//&#39;)
-  echo $filename;
-  echo &quot;/shares/compbio/Group-Wray/YanHoltz/SOFT/anaconda3/envs/ldsc/bin/python /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/ldsc.py \
-    --rg input.sumstats.gz,$i \
-    --ref-ld-chr /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/ \
-    --w-ld-chr /shares/compbio/Group-Wray/YanHoltz/SOFT/ldsc/eur_w_ld_chr/ \
-    --out vitD_${filename}&quot; &gt; script_${filename}
-  chmod 777 script_${filename}
-  tmp_command=$(echo ./script_${filename})
-  echo $tmp_command
-  qsubshcom &quot;$tmp_command&quot; 1 5G genet_cor 10:00:00 &quot;&quot;
-done
-  
-
-# Concatenate result in a clean file
-cat vit*log | grep -B1 &quot;^input&quot; | head -1 | uniq &gt; genetic_correlation.txt
-cat vit*log | grep &quot;^input&quot; &gt;&gt; genetic_correlation.txt
-
-# transfer locally
-cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
-scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA_ET_AL/4_LDSC/GENET_COR/genetic_correlation.txt  .</code></pre>
-</div>
-<div id="primary-traits" class="section level1">
-<h1><span class="header-section-number">4</span> - Primary traits</h1>
-<hr />
-<p>Here is the result for the primary traits. A red points means that the observed genetic correlation is not significantly different from 0. Genetic correlation are distributed between -0.12 and 0.12. Note that the grey point next to the trait name represents the heritability.</p>
-<pre class="r"><code># read the genet correlation
-data &lt;- read.table(&quot;0_DATA/genetic_correlation.txt&quot;, header=T)
-
-# Read the meaning of files:
-meaning=read.table(&quot;0_DATA/list_of_traits_GSMR.csv&quot;, header=T, sep=&quot;,&quot;)
-
-# Merge
-data &lt;- data %&gt;% 
-  mutate(p2=gsub(&quot;.sumstats.gz&quot;,&quot;&quot;,p2)) %&gt;%
-  left_join(meaning, by=c(&quot;p2&quot;=&quot;File&quot;))
-
-# Show trait important
-data %&gt;%
-  filter(Main==&quot;X&quot;) %&gt;%
-  arrange(rg) %&gt;%
-  mutate(signif=ifelse(p&lt;0.05,&quot;signif&quot;,&quot;non signif&quot;)) %&gt;%
-  mutate(Trait=factor(Trait, unique(Trait))) %&gt;%
-  ggplot( aes(x=Trait, y=rg, color=signif)) +
-    #geom_segment( aes(x=Trait, xend=Trait, y=0, yend=rg), color=&quot;grey&quot;) +
-    geom_errorbar(aes(x=Trait, ymin=rg-se, ymax=rg+se), alpha=0.5) +
-    geom_point(size=2) +
-    geom_point( aes(x=Trait, y=-0.21, size=h2_obs), color=&quot;grey&quot;, alpha=0.3) +
-    coord_flip() +
-    theme_ipsum() +
-    theme(legend.position=&quot;none&quot;) +
-    ylab(&quot;Genetic correlation&quot;) +
-    xlab(&quot;&quot;) +
-    theme(
-      panel.grid.major.y = element_blank()
-    ) +
-    geom_hline(yintercept=0) +
-    ggtitle(&quot;Genetic correlation with Vitamin-D&quot;)</code></pre>
-<p><img src="6_LDSC_files/figure-html/unnamed-chunk-6-1.png" width="864" style="display: block; margin: auto;" /></p>
-</div>
-<div id="secondary-traits" class="section level1">
-<h1><span class="header-section-number">5</span> - Secondary traits</h1>
-<hr />
-<p>Here is the result for the secondary traits. Genetic correlations are stronger. It is of interest that both IQ GWAS are significantly negatively correlated with vitamin D using a threshold of 0.05.</p>
-<pre class="r"><code># Show trait important
-data %&gt;%
-  filter(Main!=&quot;X&quot;) %&gt;%
-  arrange(rg) %&gt;%
-  mutate(signif=ifelse(p&lt;0.05,&quot;signif&quot;,&quot;non signif&quot;)) %&gt;%
-  mutate(Trait=factor(Trait, unique(Trait))) %&gt;%
-  ggplot( aes(x=Trait, y=rg, color=signif)) +
-    #geom_segment( aes(x=Trait, xend=Trait, y=0, yend=rg), color=&quot;grey&quot;) +
-    geom_errorbar(aes(x=Trait, ymin=rg-se, ymax=rg+se), alpha=0.5) +
-    geom_point(size=2) +
-    geom_point( aes(x=Trait, y=-0.23, size=h2_obs), color=&quot;grey&quot;, alpha=0.3) +
-    coord_flip() +
-    theme_ipsum() +
-    theme(legend.position=&quot;none&quot;) +
-    ylab(&quot;Genetic correlation&quot;) +
-    xlab(&quot;&quot;) +
-    theme(
-      panel.grid.major.y = element_blank()
-    ) +
-    geom_hline(yintercept=0) +
-    ggtitle(&quot;Genetic correlation with Vitamin-D&quot;)</code></pre>
-<p><img src="6_LDSC_files/figure-html/unnamed-chunk-7-1.png" width="864" style="display: block; margin: auto;" /></p>
-</div>
 <div id="discussion" class="section level1">
-<h1><span class="header-section-number">6</span> - Discussion</h1>
+<h1>- Discussion</h1>
 <hr />
-<p>It does not look like there is much consistency between this genetic correlation results and GSMR results. On the other hand, I’m not sure if I except any correlation between both? Must think about it. TODO: plot the relationship rg / gsmr.</p>
+<ul>
+<li>Heritability of Vitamin-D is 7%</li>
+<li>No inflation of the LD score criteria -&gt; no population stratification</li>
+</ul>
 </div>
 
 &nbsp;

@@ -9,10 +9,9 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="by Yan Holtz - 23 May 2018" />
 
 
-<title>Phenotype description</title>
+<title>Vitamin D blood concentration: phenotype description</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -209,13 +208,7 @@ $(document).ready(function () {
   <a href="3_SMR.html">SMR</a>
 </li>
 <li>
-  <a href="4_GSMR.html">GSMR</a>
-</li>
-<li>
   <a href="7_PRS.html">PRS</a>
-</li>
-<li>
-  <a href="8_mtCOJO.html">mtCOJO</a>
 </li>
 <li>
   <a href="9_Methylation.html">Methylation</a>
@@ -230,7 +223,6 @@ $(document).ready(function () {
     </div><!--/.nav-collapse -->
   </div><!--/.container -->
 </div><!--/.navbar -->
-<a href="https://github.com/holtzy/" class="github-corner" aria-label="View source on Github"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#2ecc71; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 
 <div class="fluid-row" id="header">
 
@@ -244,14 +236,15 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Phenotype description</h1>
-<h4 class="author"><em>by <a href="https://github.com/holtzy/">Yan Holtz</a> - 23 May 2018</em></h4>
+<h1 class="title toc-ignore">Vitamin D blood concentration: phenotype description</h1>
 
 </div>
 
 
-<p><br><br></p>
-<p>This file is the first part of the vitamin-D GWAS analysis. What it does:</p>
+<hr>
+<p><em>Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath</em></p>
+<hr>
+<p><br><br> This file is the first part of the vitamin-D GWAS analysis. What it does:</p>
 <ul>
 <li>Create a Phenotype file with vitamin-D + other traits of interest like sex, BMI, height, vitaminD nutrition</li>
 <li>Describe Vitamin-D dataset: seasonality, distribution etc.</li>
@@ -264,7 +257,7 @@ library(epuRate)      # Install with devtools: install_github(&quot;holtzy/epuRa
 library(xtable)
 library(knitr)</code></pre>
 <div id="get-vitamin-d-data-and-related" class="section level1">
-<h1><span class="header-section-number">1</span> - Get vitamin-D data and related</h1>
+<h1>Get vitamin-D data and related</h1>
 <hr />
 <p>The first step is to read the UKB phenotype file and output only a few fields that will interest me. I will keep only:</p>
 <ul>
@@ -291,30 +284,30 @@ scp uqyholtz@inode.qbi.uq.edu.au:/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_
 cd /Users/y.holtz/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
 scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA</code></pre>
 </div>
-<div id="describe-vitamin-d" class="section level1 tabset tabset-fade tabset-pills">
-<h1><span class="header-section-number">2</span> - Describe Vitamin-D</h1>
+<div id="describe-vitamin-d" class="section level1 tabset">
+<h1>Describe Vitamin-D</h1>
 <hr />
 <pre class="r"><code>#Load the file in R
-data=read.table(&quot;0_DATA/pheno.txt.gz&quot;, header=T, sep=&quot; &quot;)</code></pre>
+data &lt;- read.table(&quot;0_DATA/pheno.txt.gz&quot;, header=T, sep=&quot; &quot;)</code></pre>
 <div id="dimension" class="section level2">
-<h2><span class="header-section-number">2.1</span> Dimension</h2>
-<pre class="r"><code>tot=nrow(data)
-blood=nrow(data[which(!is.na(data$f.4079.0.0)),])</code></pre>
+<h2>Dimension</h2>
+<pre class="r"><code>tot &lt;- nrow(data)
+blood &lt;- nrow(data[which(!is.na(data$f.4079.0.0)),])</code></pre>
 <p>I have 502629 people in the UKB.<br />
 Among them 468182 people have info concerning their blood pressure (93.146635 %)</p>
 </div>
 <div id="distribution" class="section level2">
-<h2><span class="header-section-number">2.2</span> Distribution</h2>
+<h2>Distribution</h2>
 <p>Distribution of the distolic blood pressure:</p>
 <pre class="r"><code>data %&gt;%
   ggplot( aes(x=f.4079.0.0)) +
     geom_density( fill=&quot;skyblue&quot;, color=&quot;skyblue&quot;) +
     xlab(&quot;Diastolic blood pressure&quot;)</code></pre>
-<p><img src="1_Pheno_Description_files/figure-html/unnamed-chunk-65-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="1_Pheno_Description_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="other-vitamin-d-related-traits" class="section level1">
-<h1><span class="header-section-number">3</span> - Other Vitamin D related traits</h1>
+<h1>Other Vitamin D related traits</h1>
 <hr />
 <ul>
 <li>f.100021.0.0 = Vitamin D. <a href="http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=100021">Webpage</a></li>
@@ -322,7 +315,7 @@ Among them 468182 people have info concerning their blood pressure (93.146635 %)
 </ul>
 </div>
 <div id="ipaq-score-phenotype" class="section level1">
-<h1><span class="header-section-number">4</span> - IPAQ score phenotype</h1>
+<h1>IPAQ score phenotype</h1>
 <hr />
 <p>The IPAQ score is an estimate of outdoor activities. (International Physical Activity Questionnaire Score). It takes into account:</p>
 <ul>

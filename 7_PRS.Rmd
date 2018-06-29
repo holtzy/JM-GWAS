@@ -1,14 +1,20 @@
 ---
-title: "Polygenic Risk Score"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Computin polygenic risk scores to predict vitamin-D concentration in another dataset"
 ---
+
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 <br><br>
 
-> This document describes how to compute Polygenic Risk Score (PRS) of the UKB sample. It also describes this PRS, and notably observe its geographical distribution.
+
+This document describes how to compute Polygenic Risk Score (PRS) of the UKB sample. It also describes this PRS, and notably observe its geographical distribution.
 
 
-#- Data
+#Data
 ***
 The idea is to use the effect of each SNP on the Vitamin-D as provided by [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2). In order to do so we need:  
 
@@ -22,7 +28,7 @@ library(tidyverse)
 
 
 
-#- Compute PRS
+#Compute PRS
 ***
 PRS are computed using the `--score` option of [plink version 1.9](https://www.cog-genomics.org/plink2). This work is made twice: first without any correction in the model, second correcting with PCs.
 ```{bash, eval=FALSE}
@@ -116,7 +122,7 @@ scp y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XIA
 
 
 
-#- Description of PRS
+#Description of PRS
 ***
 Distribution of the PRS:
 ```{r}
@@ -135,7 +141,7 @@ data %>%
 
 
 
-#- Relationship between PRS and diseases {.tabset}
+#Relationship between PRS and diseases {.tabset}
 ***
 
 I build a file with the ICD10 code obsered in UKB people. It uses the field `main ICD10` (field 41202-0.0 to 41202-0.379) and `secondary ICD10`  (field 41204-0.0 to 41204-0.434).
@@ -245,7 +251,7 @@ data %>%
 
 
 
-#- Relationship between PRS and PCs {.tabset}
+#Relationship between PRS and PCs {.tabset}
 ***
 
 First of all I need to get the coordinate of each UKB participants on its 10 first PCs. I'm gonna get the PCs in Angli file:
@@ -317,7 +323,7 @@ Clearly something happening on PCs 1, 2 3, 4, 6
 
 
 
-#- Geographical Distribution of PRS
+#Geographical Distribution of PRS
 ***
 I used the [UKB geo application](https://holtzyan.shinyapps.io/UKB_geo/) to represent the geographical distribution of the PRS. I used the place of birth has a proxy of the position of each UKB study participant.  
 
@@ -327,7 +333,7 @@ There is no organization of the PRS per region.
 ![map2](IMG/PRS_map2.png)
 
 
-#- Geographical distribution of the GC gene
+#Geographical distribution of the GC gene
 ***
 
 First I need to get the allele of the genome wide significant SNPs for all the UK Biobank participants. I've got 6 SNPs to recover as described by Xia et al.
@@ -385,10 +391,7 @@ Result:
 ![](IMG/PRS_GC_gene.png)
 </center>
 
-**TODO**
 
-Same with other genes  
-Score of all genes together  
 
 
 

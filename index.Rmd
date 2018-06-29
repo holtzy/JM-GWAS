@@ -1,42 +1,46 @@
 ---
-title: "A Vitamin-D GWAS in the UK Biobank"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Investigating the genetic architecture of 25 hydroxyvitamin D blood concentration"
 ---
 
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 <br><br>
 
+<u>Abstract</u>:
 
-This document summarizes my work concerning the Vitamin-D GWAS in the UKB. It is composed by several parts:
+<br><br><br><br>
 
-* **Phenotype description**: explains - how to get the Vitamin-D phenotype - clean it - interaction with period. 
-* **run GWAS**: the code I used to run the GWAS with plink and description of its result.
-* **SMR**: description of the SMR pipeline to find putative genes under the discovered SNPs.
-* **GSMR**: description of the GSMR pipeline to find out if Vitamin-D has a causal effect on several mental diseases.
-* **XIa et al**: GSMR run on their GWAS summary statistics.
+<u>Data analysis</u>: this document summarizes the data analysis leading to the results presented in the paper. It is organized as follow:
+
+* *Phenotype description*: explains - how to get the Vitamin-D phenotype - clean it - interaction with period. 
+* *run GWAS*: the code I used to run the GWAS with plink and bolot and description of its result.
+* *SMR*: description of the SMR pipeline to find putative genes under the discovered SNPs.
+* *XIa et al*: description of the previous biggest Vitamin D GWAS
 
 
 <br><br>
 
-Some of the script described here are run on 2 different clusters:
+<u>Note</u>: Some of the script described here are computationnaly intensive and thus run on 2 different clusters. See the code below for connection on the cluster. 
 
-- Delta (IMB Cluster)
 ```{r, eval=FALSE}
-# Access to delta
+# ------  DELTA -----------
 ssh y.holtz@delta.imb.uq.edu.au
-
-# delta repository for this work
-cd /home/y.holtz/BLOOD_GWAS
+cd /shares/compbio/Group-Wray/YanHoltz/
 
 # Medici on delta:
 cd /gpfs/gpfs01/polaris/Q0286/
-```
 
-- Inode (QBI Cluster)
-```{r, eval=FALSE}
-# Access to Inode
+# ------  INODE -----------
 ssh uqyholtz@inode.qbi.uq.edu.au
-
-# Inode repo for this work
-/ibscratch/wrayvisscher/Yan_Holtz/4_UKB_GWAS/3_BLOOD_GWAS
+/ibscratch/wrayvisscher/Yan_Holtz/
 ```
+
+<u>Note</u>: This document is hosted in this [github repository](https://github.com/holtzy/VitaminD-Causality)
+
+
+
+

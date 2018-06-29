@@ -13,12 +13,8 @@ navbar:
       href: 6_LDSC.html
     - text: "SMR"
       href: 3_SMR.html
-    - text: "GSMR"
-      href: 4_GSMR.html
     - text: "PRS"
       href: 7_PRS.html
-    - text: "mtCOJO"
-      href: 8_mtCOJO.html
     - text: "Methylation"
       href: 9_Methylation.html
     - text: "Integration"
@@ -36,9 +32,8 @@ output:
       toc: FALSE
       toc_float: TRUE
       toc_depth: 2
-      number_sections: TRUE
+      number_sections: FALSE
       df_print: "paged"
       code_folding: "hide"
       includes: 
         after_body: footer.html
-        before_body: header.html

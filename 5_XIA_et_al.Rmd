@@ -1,15 +1,16 @@
 ---
 title: "GWAS on Vitamin-D:  overview of Xia et al. publication"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
 ---
 
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 <br><br>
 
-
-
-
-> This document describes the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). It also reports the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to this dataset, using Vitamin D as the risk factor, and testing its potential implication with ~80 diseases. Data downloaded from [here](https://drive.google.com/drive/folders/0BzYDtCo_doHJRFRKR0ltZHZWZjQ)
+This document describes the vitamin D GWAS result of the [Xia et al publication](https://www.nature.com/articles/s41467-017-02662-2). It also reports the application of [SMR](http://cnsgenomics.com/software/smr/#Overview) and [GSMR]("http://cnsgenomics.com/software/gsmr/") to this dataset, using Vitamin D as the risk factor, and testing its potential implication with ~80 diseases. Data downloaded from [here](https://drive.google.com/drive/folders/0BzYDtCo_doHJRFRKR0ltZHZWZjQ)
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -328,4 +329,48 @@ div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
 </div>
 
 
+
+
+#Note: cleaning the GWAS sumstat:
+***
+
+```{bash, eval=FALSE}
+# I download the vitamin-D summary statistics from here: https://drive.google.com/drive/folders/0BzYDtCo_doHJRFRKR0ltZHZWZjQ
+# Then from local download folder to delta
+gzip upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt
+scp upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz  y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
+
+# good to delta folder
+cd /home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS
+
+# I miss the frequence of the major allele in this file. I can use the hapmap3 frequencies previously calculated
+cat /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency_1.frq
+
+# --- MA FORMAT --- make the file with this new column, transform it in a format suitable for GSMR.
+echo "SNP A1 A2 freq b se p n" > GWAS_vitaminD_XiaEtAL.ma
+join <(zcat upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | sort -k 1,1) <(awk '{print $2, $6}' /home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/all_frequency*.frq | sort -k 1,1) | awk '{ print $1,$2,$3,$15,$4,$5,$6,$14}' >>  GWAS_vitaminD_XiaEtAL.ma
+
+# --- LINEAR FORMAT --- make a .linear format suitable for PLINK or FUMA
+echo "CHR SNP BP A1 TEST NMISS BETA STAT P" > GWAS_vitaminD_XiaEtAL.linear
+zcat upload_25HydroxyVitaminD_QC.METAANALYSIS1.txt.gz | grep -v 'Chr' | awk '{ print $12, $1, $13, $2, "ADD", $14, $4, $4*$5, $6}' >> GWAS_vitaminD_XiaEtAL.linear
+R  # We need to remove the 10^5 format for 100000 format
+data=read.table("GWAS_vitaminD_XiaEtAL.linear", header=T)
+data$BP = round(data$BP, 0)
+options(scipen=500)
+library(dplyr)
+data <- data %>% arrange(CHR, BP)
+write.table(data, file="GWAS_vitaminD_XiaEtAL.linear", quote=F, row.names=FALSE )
+
+# --- LIGHT FORMAT --- make a light version for github
+cat GWAS_vitaminD_XiaEtAL.linear | head -1 >  GWAS_vitaminD_XiaEtAL.linear.light
+cat GWAS_vitaminD_XiaEtAL.linear | awk '{if( $9 < 0.1){print $0}}' >>  GWAS_vitaminD_XiaEtAL.linear.light
+gzip GWAS_vitaminD_XiaEtAL.linear.light
+
+# Transfer locally?
+cd ~/Dropbox/QBI/4_UK_BIOBANK_GWAS_PROJECT/VitaminD-GWAS/0_DATA
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/VITAMIND_XIA_ET_AL/1_GWAS/GWAS_vitaminD_XiaEtAL.linear.gz .
+
+# Note: I need to delete 2 SNPs that have a P of 0 in the R output. Because R rounds them to 0
+more GWAS_vitaminD_XiaEtAL.linear | awk '{ if($9!=0){print $0}}' | gzip > GWAS_vitaminD_XiaEtAL.linear_IGV.gz
+```
 

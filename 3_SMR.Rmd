@@ -1,7 +1,11 @@
 ---
-title: "SMR"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Application of mendelian randomization methods using expression data"
 ---
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 <br><br>
 
@@ -21,7 +25,7 @@ library(plotly)
 
 
 
->This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the vitamin-D GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `SMR` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download). We first run SMR using the eQTLgen dataset. We then confirmed our results on the [GTEx dataset](https://www.gtexportal.org/home/) in different tissue.
+This document runs [SMR](http://www.nature.com/ng/journal/vaop/ncurrent/full/ng.3538.html) on the vitamin-D GWAS summary statistics. The goal is to understand which gene is hidden behind each of the SNP detected in the GWAS. The `SMR` software and its documentation is available for download [here](http://cnsgenomics.com/software/smr/#Download). We first run SMR using the eQTLgen dataset. We then confirmed our results on the [GTEx dataset](https://www.gtexportal.org/home/) in different tissue.
 
 
 
@@ -30,7 +34,7 @@ library(plotly)
 
 
 
-#- Method
+#Method
 ***
 The GWAS result suggests an oligogenic control of the VitaminD concentration. Six major loci are described, with several genes present in the corresponding regions. We can run an [SMR analysis](http://cnsgenomics.com/software/smr/#Overview) to go deeper and find out what genes are probably involved in the control of VitaminD.
 
@@ -59,7 +63,7 @@ If an association between a gene and VitaminD is detected (figure a), several op
 
 
 
-#- Data
+#Data
 ***
 To run SMR several datasets are required:
 
@@ -91,7 +95,7 @@ A note on the GTEx dataset: very well described [here](https://www.gtexportal.or
 
 
 
-#- discovery eQTL dataset description {.tabset}
+#Discovery eQTL dataset: description {.tabset}
 ***
 
 The discovery eQTL dataset is the eQTLGen dataset. Gene names are provided using Ensembl IDs, so I use the biomaRt library to get the real gene names:
@@ -180,7 +184,7 @@ eqtlgen %>%
 
 
 
-#- Run SMR on discovery dataset
+#Run SMR on discovery dataset
 ***
 The first step of SMR consists to run the algorythm on every significant eQTL (eQTL = significant relationship between a SNP allele and the expression of a gene). For each gene involved in an eQTL, we are going to test its putative effect on our trait (vitaminD) thanks to the GWAS summary statistic of this trait.  
 
@@ -215,7 +219,7 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 
 
 
-# Result {.tabset}
+#Result {.tabset}
 ***
 
 The SMR threshold used in our study takes into account multiple testing. It is thus 0.05 / # of test. `r eqtlgen %>% filter(p_SMR < (0.05 / nrow(eqtlgen)) ) %>% nrow()` have been detected by SMR. Here is their detail:
@@ -263,17 +267,17 @@ scp  y.holtz@delta.imb.uq.edu.au:/shares/compbio/Group-Wray/YanHoltz/VITAMIND_XI
 # Make the plot
 source("SCRIPT/plot_SMR.r") 
 # Read the data file in R:
-SMRData = ReadSMRData("0_DATA/myplot.ENSG00000152270.txt")
+SMRData = ReadSMRData("0_DATA/SMR_PLOT/myplot.ENSG00000152270.txt")
 # Plot the SMR results in a genomic region centred around a probe:
 SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
 ```
 
 ## Locus ~ 71 Mb
 ```{r, warning=FALSE, message=FALSE, fig.align="center", fig.width=12, fig.height=9}
-# Make the plot
-source("SCRIPT/plot_SMR.r") 
+ 
 # Read the data file in R:
-SMRData = ReadSMRData("0_DATA/myplot.ENSG00000254682.txt")
+SMRData = ReadSMRData("0_DATA/SMR_PLOT/myplot.ENSG00000254682.txt")
+
 # Plot the SMR results in a genomic region centred around a probe:
 SMRLocusPlot(data=SMRData, smr_thresh=8.4e-6, heidi_thresh=0.05, plotWindow=1000, max_anno_probe=16)
 ```
@@ -298,7 +302,7 @@ eqtlgen %>%
 
 
 
-#- Run SMR on validation dataset {.tabset}
+#Run SMR on validation dataset {.tabset}
 ***
 
 To replicate the SMR associations in a wider range of tissues relevant to VitaminD, we performed SNP analyses based on cis-eQTL data from several tissues in GTEx: 
@@ -430,7 +434,7 @@ ggplotly(p, tooltip="text")
 
 
 
-#- Discussion
+#Discussion
 ***
 
 - Six genetic regions where described in the GWAS result of [Xia et al.](https://www.nature.com/articles/s41467-017-02662-2) as associated with Vitamin-D:
@@ -487,7 +491,7 @@ ggplotly(p, tooltip="text")
 
 
 
-#- Supplementary Material: Whole SMR result {.tabset}
+#Supplementary Material: Whole SMR result {.tabset}
 ***
 
 ##eQTLGen

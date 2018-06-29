@@ -1,10 +1,13 @@
 ---
-title: "Phenotype description"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Vitamin D blood concentration: phenotype description"
 ---
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 <br><br>
-
 This file is the first part of the vitamin-D GWAS analysis. What it does:
 
 * Create a Phenotype file with vitamin-D + other traits of interest like sex, BMI, height, vitaminD nutrition
@@ -25,7 +28,7 @@ library(knitr)
 
 
 
-#- Get vitamin-D data and related
+#Get vitamin-D data and related
 ***
 The first step is to read the UKB phenotype file and output only a few fields that will interest me. I will keep only:
 
@@ -64,17 +67,17 @@ scp pheno.txt.gz y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/0_DATA
 
 
 
-#- Describe Vitamin-D  {.tabset .tabset-fade .tabset-pills}
+#Describe Vitamin-D  {.tabset }
 ***
 ```{r load_data}
 #Load the file in R
-data=read.table("0_DATA/pheno.txt.gz", header=T, sep=" ")
+data <- read.table("0_DATA/pheno.txt.gz", header=T, sep=" ")
 ```
 
 ##Dimension
 ```{r dimension}
-tot=nrow(data)
-blood=nrow(data[which(!is.na(data$f.4079.0.0)),])
+tot <- nrow(data)
+blood <- nrow(data[which(!is.na(data$f.4079.0.0)),])
 ```
 
 I have `r tot` people in the UKB.  
@@ -97,7 +100,7 @@ data %>%
 
 
 
-#- Other Vitamin D related traits 
+#Other Vitamin D related traits 
 ***
 
 - f.100021.0.0 = Vitamin D. [Webpage](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=100021)
@@ -105,7 +108,7 @@ data %>%
 
 
 
-#- IPAQ score phenotype
+#IPAQ score phenotype
 ***
 
 The IPAQ score is an estimate of outdoor activities. (International Physical Activity Questionnaire Score). It takes into account:

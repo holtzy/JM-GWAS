@@ -1,7 +1,11 @@
 ---
-title: "Integrating all the information"
-author: "by [Yan Holtz](https://github.com/holtzy/) - `r format(Sys.time(), '%d %B %Y')`"
+title: "Mendelian randomization: integrating expression and methylation results"
 ---
+<hr>
+
+*Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath*
+
+<hr>
 
 
 <br><br>
@@ -13,25 +17,20 @@ library(hrbrthemes)
 library(ggrepel)
 ```
 
->This document applies the SMR tool on both the Expression and Methylation data in the same time. It also takes into account the descriptive classification of chromatin.
 
 
 
-
-
-
-#- Method
+#Method
 ***
-I'm gonna use the methylation data located on Delta at `/gpfs/gpfs01/polaris/Q0286/uqywu16/omics/methy`
 
-I run SMR on it, like I've done for eQTL data.
+This document applies the SMR tool on both the Expression and Methylation data in the same time. It also takes into account the descriptive classification of chromatin.
 
-
-
+Methylation and expression dataset are extensively described in the previous tabs.
 
 
 
-#- Run SMR {.tabset}
+
+#Run SMR {.tabset}
 ***
 
 Run SMR on both expression and methylation datasets in the same time.
@@ -102,7 +101,7 @@ qsubshcom "$tmp_command" 1 30G smr_integration 10:00:00 ""
 
 
 
-#- Make the plot {.tabset}
+#Make the plot {.tabset}
 ***
 
 How to read the plots (from top to bottom):

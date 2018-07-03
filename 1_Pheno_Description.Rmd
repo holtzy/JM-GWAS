@@ -103,7 +103,8 @@ data %>%
 #Other Vitamin D related traits 
 ***
 
-- f.100021.0.0 = Vitamin D. [Webpage](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=100021)
+- f.100021.0.0 = Vitamin D. estimated intake, based on food and beverage consumption yesterday, excluding any supplements. [Webpage](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=100021). Categories: Estimated nutrients yesterday - Diet by 24-hour recall - Online follow-up
+
 - f.20084.0.0 = Vitamin and/or mineral supplement use. [webpage](http://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=20084). If this column == 479, then the participant took vitamin-D supplement in the last 24 hours.
 
 

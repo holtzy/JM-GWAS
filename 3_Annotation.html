@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title>Annotation of the vitamin D GWAS result</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/lumen.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 54px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+
+.section h2 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h3 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h4 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h5 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+.section h6 {
+  padding-top: 59px;
+  margin-top: -59px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Vitamin-D GWAS in the UKB</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="index.html">Intro</a>
+</li>
+<li>
+  <a href="1_Pheno_Description.html">Pheno</a>
+</li>
+<li>
+  <a href="2_GWAS.html">GWAS</a>
+</li>
+<li>
+  <a href="3_Annotation.html">Annote</a>
+</li>
+<li>
+  <a href="6_LDSC.html">LDSC</a>
+</li>
+<li>
+  <a href="4_SMR.html">SMR</a>
+</li>
+<li>
+  <a href="7_PRS.html">PRS</a>
+</li>
+<li>
+  <a href="9_Methylation.html">Methylation</a>
+</li>
+<li>
+  <a href="10_Integration.html">Integration</a>
+</li>
+<li>
+  <a href="5_XIA_et_al.html">Xia et al</a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Annotation of the vitamin D GWAS result</h1>
+
+</div>
+
+
+<hr>
+<p><em>Yan Holtz, Zhihong Zhu, Julanne Frater, Perry Bartlett, Jian Yang, John McGrath</em></p>
+<hr>
+<p><br><br></p>
+<p>The previous part of this project run a GWAS on vitamin D blood concentration and found out 6 loci significantly associated. This part aims to annotate these regions in order to list putative underlying genes.</p>
+<pre class="r"><code>library(tidyverse)
+library(qqman)
+library(readr)
+library(DT)
+library(RColorBrewer)
+library(ggrepel)</code></pre>
+<div id="genes-in-the-region" class="section level1 tabset tabset-fade">
+<h1>Genes in the region</h1>
+<hr />
+<p>The <a href="http://locuszoom.org/genform.php?type=yourdata">Locus Zoom</a> online tool allows to visualise the regions of interest and see the underlying genes. Just put the <code>.linear</code> result of PLINK on it, and specify the SNP of interest.</p>
+<p>Results for the 6 significant associations:</p>
+<ul>
+<li><strong>rs3755967</strong>: chromosome 4 ~ 73Mb | gene: GC | <a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&amp;lastVirtModeType=default&amp;lastVirtModeExtraState=&amp;virtModeType=default&amp;virtMode=0&amp;nonVirtPosition=&amp;position=chr4%3A71004093%2D72598593&amp;hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc">Genome Browser</a> | Role = Vitamin D transport.</li>
+<li><strong>rs12785878</strong>: chromosome 11 ~ 79Mb | gene: NADSYN1 / DHCR7 | <a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&amp;lastVirtModeType=default&amp;lastVirtModeExtraState=&amp;virtModeType=default&amp;virtMode=0&amp;nonVirtPosition=&amp;position=chr11%3A71456153%2D71456652&amp;hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc">Genome Browser</a></li>
+<li><strong>rs10741657</strong>: chromosome 11 ~ 15Mb | gene: CYP2R1| <a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&amp;lastVirtModeType=default&amp;lastVirtModeExtraState=&amp;virtModeType=default&amp;virtMode=0&amp;nonVirtPosition=&amp;position=chr11%3A14888332%2D14898331&amp;hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc">Genome Browser</a> | known role = hydroxylation.</li>
+<li><strong>rs17216707</strong>: chromosome 20 ~ 52Mb | gene: CYP24A1| <a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&amp;lastVirtModeType=default&amp;lastVirtModeExtraState=&amp;virtModeType=default&amp;virtMode=0&amp;nonVirtPosition=&amp;position=chr20%3A51610823%2D56620822&amp;hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc">Genome Browser</a> | Role = Catabolism.</li>
+<li><strong>rs10745742</strong>: chromosome 12 ~ 94Mb | gene: AMDHD1| <a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&amp;lastVirtModeType=default&amp;lastVirtModeExtraState=&amp;virtModeType=default&amp;virtMode=0&amp;nonVirtPosition=&amp;position=chr12%3A95939701%2D95989800&amp;hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc">Genome Browser</a></li>
+<li><strong>rs8018720</strong>: chromosome 14 ~ 38Mb | gene: SEC23A| <a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&amp;lastVirtModeType=default&amp;lastVirtModeExtraState=&amp;virtModeType=default&amp;virtMode=0&amp;nonVirtPosition=&amp;position=chr14%3A39086731%2D39087231&amp;hgsid=657472259_IeGzteVrW0qsItpQqUuZeaBnnFoc">Genome Browser</a></li>
+</ul>
+<p><br><br></p>
+<div id="rs3755967" class="section level2">
+<h2>rs3755967</h2>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs3755967.png" />
+
+</div>
+</div>
+<div id="rs12785878" class="section level2">
+<h2>rs12785878</h2>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs12785878.png" />
+
+</div>
+</div>
+<div id="rs10741657" class="section level2">
+<h2>rs10741657</h2>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs10741657.png" />
+
+</div>
+</div>
+<div id="rs17216707" class="section level2">
+<h2>rs17216707</h2>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs17216707.png" />
+
+</div>
+</div>
+<div id="rs10745742" class="section level2">
+<h2>rs10745742</h2>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs10745742.png" />
+
+</div>
+</div>
+<div id="rs8018720" class="section level2">
+<h2>rs8018720</h2>
+<div class="figure">
+<img src="IMG/VitaminD_XiaEtAl.rs8018720.png" />
+
+</div>
+</div>
+</div>
+<div id="genome-wide-gene-based-association-study-gwgas" class="section level1">
+<h1>Genome-Wide Gene-based Association Study (GWGAS)</h1>
+<hr />
+<p>This step is computed using the <code>MAGMA pipeline</code> that is run through the <a href="http://fuma.ctglab.nl">FUMA online platform</a>. Here is what it does:</p>
+<ul>
+<li>All SNPs used in the GWAS are mapped to 17999 protein coding genes.</li>
+<li>Aggregate association result of all SNPs in a gene.</li>
+<li>Deduce the association of the gene.</li>
+</ul>
+<p>Here is the Manhattan plot showing the p-value of each gene. Genome wide significance (red dashed line in the plot) was defined at P = 0.05/17999 = 2.778e-6.</p>
+<br><br>
+<center>
+<img src="IMG/GWGAS_VitaminD.png" alt="img" width="900" height="900">
+</center>
+<p><br><br></p>
+<p>Number of significantly associated genes: <strong>22</strong>. A list of these 22 genes can be found using the download button of FUMA and reading <code>genes.txt</code>. This list of gene is going to be used for several of the following steps.</p>
+<p><em>Note</em>: Connection to the <a href="http://fuma.ctglab.nl">FUMA online platform</a>: go to the <a href="http://fuma.ctglab.nl">website</a> / Account: <a href="mailto:y.holtz@uq.edu.au">y.holtz@uq.edu.au</a> / Pass: fumayanholtz.</p>
+<p><em>Note</em>: This step is computed with the <code>SNP2GENE</code> utility of the FUMA platform.</p>
+</div>
+<div id="where-are-these-22-genes-expressed" class="section level1">
+<h1>Where are these 22 genes expressed?</h1>
+<hr />
+<p>The previous GWGAS step identified 22 genes potentially involved in Vitamin-D concentration. The <code>Gene2Func</code> utility of the FUMA platform allows to check where these genes are expressed the most. It uses the <code>GTEX dataset</code> that provides expression data for all genes in 53 different tissue types:</p>
+<br><br>
+<center>
+<img src="IMG/expHeat_FUMA_gene2func.png" alt="img" width="800" height="800">
+</center>
+<p>A few observation:</p>
+<ul>
+<li>The GC gene that is the main target is mainly expressed in liver. It is also a bit expressed in Pancreas and Stomach.</li>
+<li>NADSYN1, PSMA1 and SEC23A have very similar pattern.</li>
+<li>…</li>
+</ul>
+</div>
+<div id="differentially-expressed-genes-deg" class="section level1">
+<h1>Differentially expressed genes (DEG)</h1>
+<hr />
+<p>This part follows the previous one. If I understood well here is how it works:</p>
+<ul>
+<li>for each gene, consider its expression in each tissue (heatmap above)</li>
+<li>for each tissue X, determine if its expression in X is significantly different that for all other tissues together.</li>
+<li>see if a tissue tends to have a lot of differentially expressed genes.</li>
+<li>do it for up-regulation and down-regulation as well.</li>
+</ul>
+<br><br>
+<center>
+<img src="IMG/gtex_v6_ts_general_FUMA_gene2func6942.png" alt="img" width="600" height="600">
+</center>
+<p><br><br></p>
+<p>A few observation:</p>
+<ul>
+<li>No significantly enriched DEG sets (would be in red otherwise)</li>
+<li>interesting to see this strong p-value for up-regulated DEG genes in liver. It means that a strong proportion of our 22 genes are over expressed in liver.</li>
+<li>intersting to see skin in 3rd position.</li>
+</ul>
+</div>
+<div id="where-are-the-snps-more-expressed" class="section level1">
+<h1>Where are the SNPs more expressed</h1>
+<hr />
+<p>The previous approach considered only the 22 significant genes detected using the GWGAS method. The MAGMA pipeline offers another approach that use the full distribution of SNP p-values to detect tissues enriched for vitamin D concentration. Here is the result:</p>
+<br><br>
+<center>
+<img src="IMG/magma_exp_gtex_v6_ts_general_avg_log2RPKM_FUMA_jobs9871.png" alt="img" width="700" height="700">
+</center>
+<p>Observation:</p>
+<ul>
+<li>No significant tissue</li>
+<li>Not really consistent ith previous result on genes expression: liver and kydney are far in the analysis.</li>
+</ul>
+</div>
+<div id="gene-set-analysis" class="section level1">
+<h1>Gene-Set analysis</h1>
+<hr />
+<p>The <a href="http://software.broadinstitute.org/gsea/msigdb/collections.jsp">MsigDB</a> is a database that lists about 10,000 groups of gene involved in the same pathways. For instance, the pathway called <code>go_favonoid_metabolic_process</code> is composed by 24 genes and contols the flavonoid metabolic process.</p>
+<p>It is possible to test wether our 22 genes are often involved in some of these pathways. In our case, no significant pathway seems to be enriched. Here are 4 pathways that seem to have a little trend, but do not pass multiple testing correction.</p>
+<ul>
+<li>Curated_gene_sets:reactome_biological_oxidations</li>
+<li>GO_bp:go_positive_regulation_of_transcription_from_rna_polymerase_ii_promoter_involved_in_cellular_response_to_chemical_stimulus</li>
+<li>GO_bp:go_flavonoid_metabolic_process</li>
+<li>GO_bp:go_cellular_glucuronidation</li>
+</ul>
+</div>
+<div id="functional-annotation-of-snps" class="section level1">
+<h1>Functional annotation of SNPs</h1>
+<hr />
+<p>The vitamin-D GWAS currently available show <code>6 independant loci</code>. These loci are composed by <code>1875 SNPs</code>. Each SNP has a position. Using the genome annotation, it is possible to count what are the functional annotations of SNPs that are the most frequent. FUMA allows to load a file called <code>snps.txt</code> that present these results. Let’s load it and visualize the data.</p>
+<pre class="r"><code># Packages
+library(tidyverse)
+library(hrbrthemes)
+library(patchwork)
+
+# read data
+data &lt;- read.table(&quot;0_DATA/snps.txt&quot;, header=T)
+
+# Plot 1: functionnal annotation:
+p1 &lt;- data %&gt;%
+  filter(!is.na(func)) %&gt;%
+  filter(!func %in% c(&quot;upstream:downstream:upstream&quot;, &quot;upstream:upstream:downstream&quot; )) %&gt;%
+  group_by(func) %&gt;%
+  summarize(n=n()) %&gt;%
+  arrange(n) %&gt;%
+  mutate(func=factor(func, func)) %&gt;%
+  ggplot(aes(x=func, y=n)) +
+    geom_bar(stat=&quot;identity&quot;, alpha=0.6) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab(&quot;&quot;) +
+    ylab(&quot;&quot;) +
+    ggtitle(&quot;Functionnal Annotation&quot;) +
+    theme(plot.title = element_text(size=10))
+
+# Plot 2: regulome DB score:
+p2 &lt;- data %&gt;%
+  filter(!is.na(RDB)) %&gt;%
+  group_by(RDB) %&gt;%
+  summarize(n=n()) %&gt;%
+  arrange(desc(RDB)) %&gt;%
+  mutate(RDB=factor(RDB,RDB)) %&gt;%
+  ggplot(aes(x=RDB, y=n)) +
+    geom_bar(stat=&quot;identity&quot;, alpha=0.6) +
+    coord_flip() +
+    theme_ipsum() +
+    xlab(&quot;&quot;) +
+    ylab(&quot;&quot;) +
+    ggtitle(&quot;RegulomeDB score&quot;) +
+    theme(plot.title = element_text(size=10))
+
+# Plot 3: chromatin state:
+p3 &lt;- data %&gt;%
+  group_by(minChrState) %&gt;%
+  summarize(n=n()) %&gt;%
+  arrange(desc(minChrState)) %&gt;%
+  mutate(minChrState = factor(minChrState, minChrState)) %&gt;%
+  ggplot(aes(x=as.factor(minChrState), y=n)) +
+    geom_bar(stat=&quot;identity&quot;, alpha=0.6) +
+    coord_flip() +
+    theme_ipsum()  +
+    xlab(&quot;&quot;) +
+    ylab(&quot;&quot;) +
+    ggtitle(&quot;Chromatine state&quot;) +
+    theme(plot.title = element_text(size=10))
+
+p1 + p2 + p3</code></pre>
+<p><img src="3_Annotation_files/figure-html/unnamed-chunk-2-1.png" width="960" /></p>
+<p><br></p>
+<p><u><em>Explanation</em></u>:</p>
+<ul>
+<li><em>Functionnal Annotation</em>: distribution of the functionnal consequences of SNPs in genomic risk loci.</li>
+<li><em>RegulomeDB score</em>: Distribution of RegulomeDB scores for SNPs in genomic risk loci, with a low score indicateing a high likelihood of the SNP having a regulatory function.</li>
+<li><em>Chromatin state</em>: The minimum chromatin state across 127 tissue and cell types for SNPs in genomic risk loci, with lower states indicating higher accessibility and states 1-7 referring to open chromatin states.</li>
+</ul>
+<p><br></p>
+<p><em>note</em> - I’m not sure why this result is interesting. Indeed, we would probably need to compare it with the proportion of each class in the complete genome. For instance, intergenic and intronic annotations are probably the most common ones in the genome, so it is not a surprise if I observe it so often, is it?</p>
+<p><em>note</em> - The tool used to assign each SNP to a class is called ANNOVAR.</p>
+</div>
+<div id="other-traits-controled-by-the-same-loci" class="section level1">
+<h1>Other traits controled by the same loci:</h1>
+<hr />
+<p>The GWAS catalog is a catalog of thounsands of GWAS. FUMA allows to take all our significant SNPs and check if they have already been detected for another study. It appears that:</p>
+<ul>
+<li><em>chromosome 4</em>: Non-alcoholic fatty liver disease histology (other) / Myeloid white cell count / White blood cell count / Granulocyte count / Neutrophil count / basophil count</li>
+<li><em>chromosome 11</em>: HDL cholesterol /</li>
+<li><em>chromosome 20</em>: Glomerular filtration rate</li>
+</ul>
+</div>
+<div id="a-note-on-fuma" class="section level1">
+<h1>A note on FUMA</h1>
+<hr />
+<p><a href="http://fuma.ctglab.nl">FUMA</a> is a platform that can be used to annotate, prioritize, visualize and interpret GWAS results. It offers 2 main functions:</p>
+<ul>
+<li>The <strong>SNP2GENE</strong> function takes GWAS summary statistics as an input, and provides extensive functional annotation for all SNPs in genomic areas identified by lead SNPs.</li>
+<li>The <strong>GENE2FUNC</strong> function takes a list of geneids (as identified by SNP2GENE or as provided manually) and annotates genes in biological context</li>
+</ul>
+<p><em>Note</em> - Connection to the <a href="http://fuma.ctglab.nl">FUMA online platform</a>: go to the <a href="http://fuma.ctglab.nl">website</a> / Account: <a href="mailto:y.holtz@uq.edu.au">y.holtz@uq.edu.au</a> / Pass: fumayanholtz.</p>
+<p><em>Citation</em> -</p>
+<p><em>Input</em> - as input it takes a GWAS result. Transfert the Plink results locally:</p>
+<pre class="bash"><code>cd /Users/y.holtz/Desktop
+scp y.holtz@delta.imb.uq.edu.au:/home/y.holtz/BLOOD_GWAS/1_GWAS/PLINK/result_GWAS_bloodpressure_plink.linear.gz .</code></pre>
+</div>
+<div id="other-genes-in-the-region-with-igv" class="section level1">
+<h1>Other: Genes in the region with IGV</h1>
+<hr />
+<p>Another possiblity suggested by John would be to use the <a href="http://software.broadinstitute.org/software/igv/">IGV</a> software. Download is possible <a href="http://software.broadinstitute.org/software/igv/download">here</a>. It looks like this tool is more adapted for people working at the molecular level? Like using NGS and reads?</p>
+</div>
+
+&nbsp;
+<hr />
+<p style="text-align: center;">A work by <a href="https://github.com/holtzy/">Yan Holtz</a></p>
+<p style="text-align: center;"><span style="color: #808080;"><em>Yan.holtz.data@gmail.com</em></span></p>
+
+<!-- Add icon library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!-- Add font awesome icons -->
+<p style="text-align: center;">
+	<a href="https://twitter.com/r_graph_gallery?lang=en" class="fa fa-twitter"></a>
+	<a href="https://www.linkedin.com/in/yan-holtz-2477534a/" class="fa fa-linkedin"></a>
+	<a href="https://github.com/holtzy/" class="fa fa-github"></a>
+</p>
+
+&nbsp;
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

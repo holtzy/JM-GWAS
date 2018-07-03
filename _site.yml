@@ -9,10 +9,12 @@ navbar:
       href: 1_Pheno_Description.html
     - text: "GWAS"
       href: 2_GWAS.html
+    - text: "Annote"
+      href: 3_Annotation.html
     - text: "LDSC"
       href: 6_LDSC.html
     - text: "SMR"
-      href: 3_SMR.html
+      href: 4_SMR.html
     - text: "PRS"
       href: 7_PRS.html
     - text: "Methylation"
@@ -22,7 +24,7 @@ navbar:
     - text: "Xia et al"
       href: 5_XIA_et_al.html
 
-     
+                                                                                             
       
       
 output:

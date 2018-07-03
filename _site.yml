@@ -1,41 +1,41 @@
-name: "Vitamin-D GWAS in the UKB"
-output_dir: "."
+name: Vitamin-D GWAS in the UKB
+output_dir: '.'
 navbar:
-  title: "Vitamin-D GWAS in the UKB"
+  title: Vitamin-D GWAS in the UKB
   right:
-    - text: "Intro"
-      href: index.html
-    - text: "Pheno"
-      href: 1_Pheno_Description.html
-    - text: "GWAS"
-      href: 2_GWAS.html
-    - text: "Annote"
-      href: 3_Annotation.html
-    - text: "LDSC"
-      href: 6_LDSC.html
-    - text: "SMR"
-      href: 4_SMR.html
-    - text: "PRS"
-      href: 7_PRS.html
-    - text: "Methylation"
-      href: 9_Methylation.html
-    - text: "Integration"
-      href: 10_Integration.html
-    - text: "Xia et al"
-      href: 5_XIA_et_al.html
-
-                                                                                             
-      
-      
+  - text: Intro
+    href: index.html
+  - text: Pheno
+    href: 1_Pheno_Description.html
+  - text: GWAS
+    href: 2_GWAS.html
+  - text: Annote
+    href: 3_Annotation.html
+  - text: LDSC
+    href: 6_LDSC.html
+  - text: SMR
+    href: 4_SMR.html
+  - text: PRS
+    href: 7_PRS.html
+  - text: Methylation
+    href: 9_Methylation.html
+  - text: Integration
+    href: 10_Integration.html
+  - text: Xia et al
+    href: 5_XIA_et_al.html
+    
 output:
   html_document:
-      theme: "lumen"
-      css: style.css
-      toc: FALSE
-      toc_float: TRUE
-      toc_depth: 2
-      number_sections: FALSE
-      df_print: "paged"
-      code_folding: "hide"
-      includes: 
-        after_body: footer.html
+    theme: lumen
+    css: style.css
+    toc: no
+    toc_float: yes
+    toc_depth: 2
+    number_sections: no
+    df_print: paged
+    code_folding: hide
+    includes:
+      after_body: footer.html
+    lib_dir: site_libs
+    self_contained: no
+

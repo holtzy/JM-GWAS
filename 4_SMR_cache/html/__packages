@@ -1,10 +1,4 @@
 base
-methods
-datasets
-utils
-grDevices
-graphics
-stats
 biomaRt
 tidyverse
 ggplot2
@@ -16,3 +10,15 @@ dplyr
 stringr
 forcats
 DT
+rmarkdown
+epuRate
+xtable
+knitr
+hrbrthemes
+ggrepel
+qqman
+RColorBrewer
+bindrcpp
+gridExtra
+patchwork
+plotly
